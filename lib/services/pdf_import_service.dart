@@ -7,7 +7,10 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import '../models/busta_paga.dart';
 import 'busta_paga_regex_parser.dart';
+import 'payslip_layouts/pdf_contenuto.dart';
 import 'pdf_path_resolver.dart';
+
+export 'payslip_layouts/pdf_contenuto.dart' show ParolaVoce;
 
 enum PdfImportStatus { success, cancelled, noExtractableText, error }
 
@@ -470,13 +473,6 @@ enum _ColonnaRateo {
 /// destro X) — a differenza di [ParolaRateo] serve anche il bordo sinistro,
 /// necessario per ricostruire testo libero allineato a sinistra (descrizioni
 /// di voci/contributi), non solo colonne numeriche allineate a destra.
-typedef ParolaVoce = ({
-  String testo,
-  double bordoSuperiore,
-  double bordoSinistro,
-  double bordoDestro,
-});
-
 /// Classifica le parole della prima pagina del PDF (ridotte a [ParolaVoce])
 /// nella tabella voci, nella tabella contributi, nella trattenuta IRPEF e
 /// nella riga totali del layout del software payroll "JOB", combinandole in

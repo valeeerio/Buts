@@ -13,6 +13,10 @@ enum StatoVerificaBustaPaga { daConfermare, confermato }
 /// linea con le mensilità normali.
 enum TipoBustaPaga { mensile, tredicesima, quattordicesima }
 
+/// Identificatore del layout PDF di default (software paghe "JOB"); usato
+/// anche come default della colonna Drift `layout` per le buste già salvate.
+const kLayoutPredefinito = 'job';
+
 /// Singola voce di competenza (es. "Retribuzione ordinaria", "Edr
 /// contrattuale", "Straordinario diurno (30%)") estratta dal PDF o inserita
 /// manualmente nel form/dettaglio. `importo` è 0 quando la riga del PDF non

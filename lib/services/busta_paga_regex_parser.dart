@@ -110,6 +110,10 @@ class BustaPagaEstratti {
   /// netto in busta stampato sul PDF. Sempre `false` sul percorso testuale.
   final bool nettoVerificato;
 
+  /// Identificatore del layout PDF che ha prodotto questi dati (vedi
+  /// `PayslipLayout.id`); persistito in `BustaPaga.layout`.
+  final String layoutId;
+
   const BustaPagaEstratti({
     this.periodo,
     this.lordo,
@@ -134,6 +138,7 @@ class BustaPagaEstratti {
     this.lordoVerificato = false,
     this.trattenuteVerificate = false,
     this.nettoVerificato = false,
+    this.layoutId = kLayoutPredefinito,
   });
 }
 
