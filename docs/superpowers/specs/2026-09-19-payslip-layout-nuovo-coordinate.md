@@ -2,8 +2,9 @@
 
 Findings ricavati leggendo un cedolino di esempio (luglio 2026, 2 pagine) con
 Syncfusion tramite `PdfImportService.leggiContenuto`, lo stesso motore
-dell'app. Nessun dato personale: solo etichette generiche, intervalli X/Y e
-strutture. Coordinate in punti PDF (origine in alto a sinistra, pagina
+dell'app. Nessun dato personale ne' sanitario: solo etichette generiche del
+modulo, intervalli X/Y, strutture e formati dei numeri; i valori numerici
+sono sostituiti da formati (`NN,NN`) o da esempi fittizi. Coordinate in punti PDF (origine in alto a sinistra, pagina
 ~595x842); `Y` e' `bordoSuperiore` della parola, `X` sono
 `bordoSinistro`/`bordoDestro`.
 
@@ -70,7 +71,7 @@ aritmeticamente: somma delle voci pagina 0 + pagina 1 + arrotondamento
 su tutte le pagine.
 
 Regola proposta per scegliere la pagina dei totali: la **pagina che ha una
-parola numerica (formato `1.234,56`) nella riga sotto l'etichetta "Totale
+parola numerica (formato `N.NNN,NN`) nella riga sotto l'etichetta "Totale
 Competenze"** (Y etichetta + 5..+14, X che si sovrappone a 479..562). In
 pratica: l'ultima pagina, che non ha "SEGUE ..". In alternativa: la pagina
 senza il marker `SEGUE`. La regola sulla presenza del valore e' piu'
@@ -78,11 +79,33 @@ robusta di un indice fisso e regge anche un documento a pagina singola. Le
 voci di competenza vanno invece lette da TUTTE le pagine (unendo, ordinate
 per pagina e Y).
 
-Attenzione: il Y di ogni sezione **cambia da pagina a pagina** (es. riga
-etichette "Totale ritenute / Totale Competenze" a Y 612,8 in pagina 0 e a
-624,1 in pagina 1; riquadro presenze, righe ratei, "NETTO DA PAGARE" sono
-tutti traslati di ~11 pt fra le due pagine). Le ancore vanno perche' sempre
-**relative all'etichetta** della stessa pagina, mai a Y assoluti.
+Blocchi verificati sul PDF di esempio (Y = `bordoSuperiore` dell'etichetta o
+riga, pagina 0 / pagina 1):
+
+FISSI (stessa Y su entrambe le pagine):
+- intestazione con "Periodo di retribuzione" 127,6 / 127,6, valore periodo
+  136,9 / 136,9;
+- "Netto da pagare" (riquadro in alto) 206,5 / 206,5, valore 215,7 / 215,7;
+- "Ore lavorate" 296,9 / 296,9, valore 306,1 / 306,1;
+- testata tabella (COD., DESCRIZIONE, ...) 331,9 / 331,9; inizio delle righe
+  voce 351,3 / 351,3 (il numero di righe invece varia);
+- piede: "Firma" 748,3 / 748,3, data di stampa 757,6 / 757,6.
+
+TRASLANO di circa +11,3 pt in pagina 1:
+- riga etichette detrazioni/arrotondamenti 590,3 / 601,6;
+- riga etichette "Totale ritenute / Totale Competenze" 612,8 / 624,1;
+- etichette Ferie/ROL 635,4 / 646,7 e Ex fes. 658,1 / 669,4;
+- etichetta "NETTO DA PAGARE" (in basso) 647,9 / 659,2;
+- riquadro presenze: titolo "Presenze" 692,9 / 704,3, giorni della settimana
+  706,3 / 717,6, righe delle presenze (ordinarie/assenze) 717,6 / 728,9 e
+  728,9 / 740,2.
+
+Presente solo in pagina 0: marker "SEGUE .." (Y ~667,3).
+
+Le ancore vanno quindi sempre **relative all'etichetta** della stessa
+pagina, mai a Y assolute: i blocchi fissi (in alto) sono ancorati alla loro
+etichetta come gli altri, ma gli unici che possono essere trattati con Y
+quasi assoluta sono quelli dell'elenco FISSI, e non conviene dipenderne.
 
 ## 3. Ancore per campo
 
@@ -101,8 +124,8 @@ quindi sono tenute per stabili (da confermare, vedi punto 5).
   MAG, GIU, LUG, AGO, SET, OTT, NOV, DIC (da confermare su altri PDF).
 
 ### Netto da pagare (due posizioni, stesso valore)
-- Riquadro in alto (presente su TUTTE le pagine): etichetta `Netto da pagare`
-  X 425,4-472,7 Y ~206,5; valore in formato `1.234,56` X ~530-561,5 (bordo
+- Riquadro in alto (presente su TUTTE le pagine, Y FISSA 206,5 / 206,5):
+  etichetta `Netto da pagare` X 425,4-472,7 Y ~206,5; valore in formato `N.NNN,NN` X ~530-561,5 (bordo
   destro ~561,5), Y ~215,7 (+9,2). Piu' a destra dell'etichetta, non
   sotto. Nella stessa riga Y ~215,7 c'e' anche un codice fiscale (X
   ~284-365): scartare con filtro X >= 520.
@@ -124,8 +147,8 @@ Riga etichette pagina 1 a Y ~624,1 (pagina 0: 612,8):
   competenze), non per sovrapposizione con l'etichetta.
 
 ### Ore lavorate
-- Etichetta `Ore` `lavorate` X 72,7-107,1, Y ~296,9 (uguale su tutte le pagine).
-- Valore (formato `146,00`): X 103,3-127,9, Y ~306,1 (+9,2). E' la prima
+- Etichetta `Ore` `lavorate` X 72,7-107,1, Y ~296,9 (FISSA: stessa Y in entrambe le pagine).
+- Valore (formato `NNN,NN`): X 103,3-127,9, Y ~306,1 (+9,2). E' la prima
   parola numerica (piu' a sinistra) della riga valori a Y ~306,1: le altre
   sono Ore retribuite (X 164-189), giorni (`26`, `19`...) nelle colonne
   seguenti. Non sovrapposto alla sola etichetta (comincia a destra):
@@ -150,16 +173,19 @@ Struttura a righe di 3 sottolivelli. Etichette (Y ~646,7 in pagina 1):
 | Ex fes. | `Ex fes. resid.` | 194,8-230,9, Y ~669,4 |
 
 Riga valori: Y ~659,5 (etichetta + 12,8) per Ferie e ROL; i valori
-sono formato `47,93`, larghezza ~20-25 pt, **piu' a destra dell'inizio
+sono formato `NN,NN`, larghezza ~20-25 pt, **piu' a destra dell'inizio
 dell'etichetta** (cella allineata a destra dentro una colonna):
 
 - `a.p.` (anno precedente): Ferie X 89,8-109,8; ROL X 251,9-271,9.
-- `spett.` (maturato del mese): Ferie X 130,3-150,3; ROL X 292,6-312,6.
+- `spett.` (cumulato da inizio anno, NON il solo mese: vedi punto aperto 9): Ferie X 130,3-150,3; ROL X 292,6-312,6.
   Sopra ciascun valore `spett.` c'e' anche una piccola parola
-  `rateo m.:NN,NN` (due parole: `rateo` + `m.:13,33`, Y ~652,7, tra riga
+  `rateo m.:NN,NN` (due parole: `rateo` + `m.:NN,NN`, Y ~652,7, tra riga
   etichette e riga valori): e' il rateo mensile, **non** un saldo; il `:`
-  dentro una singola parola (`m.:13,33`) la rende non parsabile come numero
+  dentro una singola parola (`m.:NN,NN`) la rende non parsabile come numero
   isolato: va ignorata (o letta come numero dopo `m.:`).
+  Fatto osservato: il valore `spett.` e' uguale al rateo mensile moltiplicato
+  per i mesi trascorsi (a luglio: rateo m. x 7, per Ferie e per ROL), cioe' il
+  cumulato da inizio anno.
 - `godute`/`goduti`: Ferie: **cella vuota** nel PDF di esempio (nessuna
   parola in X 154-189, Y 659,5); ROL X 328,4-353,0.
 - `residue`/`residui`: Ferie X 206,9-231,4; ROL X 373,8-393,8.
@@ -168,15 +194,30 @@ dell'etichetta** (cella allineata a destra dentro una colonna):
   verificabile dove stiano i valori (ipotesi: stessa struttura, Y = etichetta
   + 12,8).
 
-Assegnazione valore-cella: dato che il valore e' piu' a destra
-dell'etichetta, agganciare per bordo destro del valore ai centri di colonna
-(Ferie: a.p. ~110, spett. ~150, godute ~189, residue ~231; ROL: a.p. ~272,
-spett. ~313, goduti ~353, residui ~394) con tolleranza +-6 pt. Dettaglio
-implementativo del Task 5.
+Assegnazione valore-cella: i valori sono allineati a destra, quindi si
+aggancia il **bordo destro** del valore al bordo destro della colonna
+(non ai centri) osservato nell'esempio:
 
-Verifica aritmetica della spec sulle colonne trovate: Ferie 47,93 + 93,31 =
-141,24 (a.p.+spett.=residue, godute vuote); ROL 62,07 + 60,69 - 106,00 =
-16,76 (a.p.+spett.-goduti=residuo). Coerenti: la mappatura e' confermata.
+| Colonna | Bordo destro osservato | Tolleranza |
+|---|---|---|
+| Ferie a.p. | ~109,8 | +-4 |
+| Ferie spett. | ~150,3 | +-4 |
+| Ferie godute | ~189 (NON OSSERVATO: dedotto dall'etichetta, cella vuota) | +-4, da verificare |
+| Ferie residue | ~231,4 | +-4 |
+| ROL a.p. | ~271,9 | +-4 |
+| ROL spett. | ~312,6 | +-4 |
+| ROL goduti | ~353,0 | +-4 |
+| ROL residui | ~393,8 | +-4 |
+
+Le colonne adiacenti distano ~40 pt tra i bordi destri: +-4 pt non e'
+ambiguo e assorbe la variazione di larghezza dei numeri (~0,6 pt osservati).
+Dettaglio implementativo del Task 5.
+
+Verifica aritmetica sulle colonne trovate, con esempio FITTIZIO della stessa
+struttura: Ferie a.p. 10,00 + spett. 35,00 (= rateo 5,00 x 7 mesi) = residue
+45,00, godute vuote; ROL a.p. 20,00 + spett. 56,00 (= rateo 8,00 x 7) - goduti
+30,00 = residui 46,00. Sul PDF reale le due identita' tornano esattamente
+(a.p.+spett.=residue per Ferie; a.p.+spett.-goduti=residui per ROL).
 
 ### Voci di competenza
 Righe della tabella centrale (Y da ~351 in avanti, passo ~11,3 pt), colonne:
@@ -185,9 +226,9 @@ Righe della tabella centrale (Y da ~351 in avanti, passo ~11,3 pt), colonne:
 |---|---|---|
 | Codice | numerico (`1`, `16`, `25`, `42`) | 84,5-93,3 |
 | Descrizione | testo multi-parola | da X ~107,4 |
-| Ore-giorni | quantita', `40,00` | 299,6-324,4 (bordo destro ~324) |
-| Dato base | tariffa, `11,1029` | 362,8-391,7 |
-| Importo | `444,12` | 530,2-561,5 (bordo destro ~561,4) |
+| Ore-giorni | quantita', `NN,NN` | 299,6-324,4 (bordo destro ~324) |
+| Dato base | tariffa, numero con 4 decimali | 362,8-391,7 |
+| Importo | `NNN,NN` | 530,2-561,5 (bordo destro ~561,4) |
 
 Note:
 - Etichette della testata (`COD.` X 76,2, `DESCRIZIONE` 162,4,
@@ -196,8 +237,8 @@ Note:
   la riga delle detrazioni (Y 590,3 pag. 0 / 601,6 pag. 1).
 - Una voce ha sempre il codice numerico nella colonna Codice: le righe della
   sezione ritenute (vedi sotto) non lo hanno.
-- Nomi di voce visti (etichette generiche): "ORE ORD.", "CARENZA MALATTIA",
-  "ROL GODUTI", "TRASFERTA (tipo 3)" (descrizione con parentesi).
+- Nomi di voce visti (etichette generiche): "ORE ORD.", una voce di assenza
+  retribuita, "ROL GODUTI", "TRASFERTA (tipo 3)" (descrizione con parentesi).
 - "ROL GODUTI" compare come voce con importo positivo (ore + tariffa +
   importo): e' una voce di competenza retribuita, **non** i ROL goduti della
   tabella ratei.
@@ -216,8 +257,8 @@ sinistra 448,7-457). Quindi discriminante voce/trattenuta: bordo destro
 dell'importo ~473 (ritenuta) vs ~561 (competenza). Righe viste:
 
 - Contributi: `CTR FPLD` (due righe, base imponibile in colonna Dato base X
-  ~360-392: `1.332,00` e `711,00`; contributo in colonna Ritenute:
-  `81,78` e `43,66`).
+  ~360-392: numeri `N.NNN,NN` e `NNN,NN`; contributo in colonna
+  Ritenute: due numeri `NN,NN`).
 - IRPEF: `IRPEF NETTA` (Ritenute X 448,7-473,3); accanto restano righe
   informative NON trattenute: `IMPONIBILE IRPEF` (X 360-392, colonna Dato
   base), `IRPEF LORDA` (X 367-392), `DETRAZIONI` (X 367-392), e
@@ -256,8 +297,8 @@ nel layout JOB); tutto il resto e' informativo.
   competenze.
 - Ferie: a.p. + spett. = residue; ROL: a.p. + spett. - goduti = residui.
 - Ore lavorate (riquadro) = somma delle quantita' delle voci "ORE ORD." delle
-  due pagine, nell'esempio; non generalizzabile (ci sono anche voci malattia
-  e ROL), non usarla come controllo.
+  due pagine, nell'esempio; non generalizzabile (ci sono anche voci di assenza
+  retribuita e ROL), non usarla come controllo.
 
 ## 5. Punti aperti / ambigui
 
@@ -271,12 +312,11 @@ nel layout JOB); tutto il resto e' informativo.
    dall'etichetta). Non tarabile senza un secondo PDF.
 3. **Ferie godute** vuote nell'esempio: colonna attesa X ~154-189 ma non
    osservata con un valore.
-4. **ROL goduti nella tabella ratei (106,00)** vs voce "ROL GODUTI" nelle
-   competenze (somma delle ore nelle due pagine: non coincide): il valore nei
-   ratei coincide con il totale di un'altra voce, quindi il significato
-   esatto (cumulativo annuo? ore del mese?) va chiarito dall'utente. La
-   mappatura scelta nella spec (a.p. + spett. - goduti = residuo) regge
-   comunque aritmeticamente.
+4. **ROL goduti nella tabella ratei**: il valore nel rateo "ROL goduti"
+   (cumulato annuo) differisce dalle ore della voce "ROL GODUTI" del mese
+   (somma delle ore delle due pagine, 22 ore in totale). Il significato esatto
+   del valore nel rateo va chiarito con l'utente. L'identita'
+   a.p. + spett. - goduti = residui regge comunque aritmeticamente.
 5. **Permessi**: il layout JOB ha "Permessi riduz. orario goduti" mensile; nel
    nuovo layout non c'e' nessuna etichetta analoga distinta dai ROL: i ROL sono
    gli unici permessi visti.
@@ -287,3 +327,14 @@ nel layout JOB); tutto il resto e' informativo.
    presenza del valore sotto "Totale Competenze" dovrebbe reggere).
 8. **Nome del layout / software paghe**: non deducibile dal PDF (nessuna
    marca); decisione da prendere con l'utente.
+9. **Mappatura maturato/goduto/residuo (`spett.` cumulato)**: nel PDF `spett.`
+   e' il cumulato da inizio anno (rateo mensile x mesi trascorsi, es. rateo m.
+   x 7 a luglio), non l'accantonato del solo mese; la spec del design (riga 85)
+   assume maturato = `spett.` "accantonato nel mese". Decisione NON presa
+   qui. Opzioni: (a) maturato = rateo mensile (`rateo m.`): l'utente vede il
+   maturato del mese, coerente con gli altri layout, ma serve leggere la
+   parola `m.:NN,NN` e il residuo non e' ricostruibile da maturato+goduto;
+   (b) maturato = `spett.` cumulato: l'utente vede il maturato da inizio anno
+   (il valore cresce mese dopo mese e non e' confrontabile col maturato
+   mensile del layout JOB); il residuo resta a.p. + spett. - goduti. Da
+   decidere con l'utente prima del Task 5.
