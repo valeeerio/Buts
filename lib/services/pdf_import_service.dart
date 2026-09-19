@@ -132,45 +132,6 @@ class PdfImportService {
     }
   }
 
-  /// Testo linearizzato (percorso storico, usato da
-  /// [BustaPagaRegexParser.parse] per tutti i campi tranne, quando
-  /// disponibili, ratei/voci) più ratei e voci letti per COORDINATE
-  /// (percorso più affidabile quando disponibile, vedi [_paroleDiPagina]
-  /// /[classificaRateiDaCoordinate]/[classificaVociDaCoordinate]), estratti
-  /// dallo stesso [PdfDocument] in un solo passaggio (un solo parsing del
-  /// file, un solo dispose, un'unica lettura delle parole della prima
-  /// pagina condivisa da entrambe le classificazioni).
-  ///
-  /// PUBBLICO (non solo uso interno di [pickAndImport]) apposta per essere
-  /// testabile direttamente su bytes di PDF reali, senza passare dal file
-  /// picker di sistema — vedi il test di accettazione sui PDF reali in
-  /// `test/pdf_voci_coordinate_test.dart`.
-  ({
-    String? testo,
-    RateiEstrattiDaCoordinate? ratei,
-    VociEstratteDaCoordinate? voci,
-  }) estraiDaBytes(List<int> bytes) {
-    final document = PdfDocument(inputBytes: bytes);
-    try {
-      final testo = PdfTextExtractor(document).extractText();
-      final parole = _paroleDiPagina(document, 0);
-      final ratei = parole == null
-          ? null
-          : classificaRateiDaCoordinate([
-              for (final p in parole)
-                (
-                  testo: p.testo,
-                  bordoSuperiore: p.bordoSuperiore,
-                  bordoDestro: p.bordoDestro,
-                ),
-            ]);
-      final voci = parole == null ? null : classificaVociDaCoordinate(parole);
-      return (testo: testo, ratei: ratei, voci: voci);
-    } finally {
-      document.dispose();
-    }
-  }
-
   /// Adattamento SYNCFUSION-specifico: legge le parole (con le rispettive
   /// coordinate) della PRIMA pagina del PDF — dove il layout del software
   /// payroll "JOB" stampa sia la tabella "RATEI" (Ferie, Permessi R.O.L., Ex

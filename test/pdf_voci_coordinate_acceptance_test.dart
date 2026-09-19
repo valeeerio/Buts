@@ -1,14 +1,15 @@
 import 'dart:io';
 
-import 'package:buts/services/busta_paga_regex_parser.dart';
+import 'package:buts/services/payslip_layouts/payslip_layout_registry.dart';
 import 'package:buts/services/pdf_import_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 /// Test di ACCETTAZIONE (non un unit test puro, a differenza di
 /// `test/pdf_voci_coordinate_test.dart`) su cedolini REALI: verifica che
-/// `PdfImportService.estraiDaBytes` + `BustaPagaRegexParser.parse` (percorso
-/// a coordinate, vedi `classificaVociDaCoordinate`) ricostruiscano
+/// il percorso reale dell'app (`PdfImportService.leggiContenuto` +
+/// `PayslipLayoutRegistry.standard.estrai`, che per i cedolini JOB usa il
+/// percorso a coordinate, vedi `classificaVociDaCoordinate`) ricostruisca
 /// ESATTAMENTE lordo/netto/somma trattenute dai totali stampati sulla riga
 /// finale del cedolino, su tutti i PDF reali disponibili — non solo sulle
 /// fixture sintetiche dell'altro file.
@@ -40,7 +41,6 @@ void main() {
   ]..sort();
 
   const importService = PdfImportService();
-  const parser = BustaPagaRegexParser();
 
   // Stessa stringa di `BustaPagaRegexParser._chiaveArrotondamento`
   // (privata, non importabile): la differenza di arrotondamento ARR.
@@ -64,20 +64,26 @@ void main() {
         'estrazione per coordinate coerente con i totali stampati: '
         '${p.basename(path)}', () {
       final bytes = File(path).readAsBytesSync();
-      final estratti = importService.estraiDaBytes(bytes);
+      final contenuto = importService.leggiContenuto(bytes);
+      expect(contenuto.testo, isNotNull,
+          reason: 'nessun testo estraibile da $path');
 
-      final testo = estratti.testo;
-      expect(testo, isNotNull, reason: 'nessun testo estraibile da $path');
+      const registro = PayslipLayoutRegistry.standard;
+      expect(registro.rileva(contenuto)?.id, 'job',
+          reason: 'layout non riconosciuto come "job" su $path');
+      final risultato = registro.estrai(contenuto);
+      expect(risultato, isNotNull, reason: 'nessun layout per $path');
+      expect(risultato!.layoutId, 'job');
 
-      final voci = estratti.voci;
-      expect(voci, isNotNull,
-          reason: 'nessuna voce letta per coordinate da $path');
-      expect(voci!.haDatiSufficienti, isTrue,
-          reason: 'dati insufficienti dal percorso a coordinate su $path '
-              '(il fix di wiring non starebbe avendo effetto)');
+      // Totali stampati sulla riga finale, riletti per coordinate dalla
+      // prima pagina (stessa funzione pura usata dal layout).
+      final parole = contenuto.primaPagina;
+      expect(parole, isNotNull,
+          reason: 'prima pagina non leggibile per coordinate su $path');
+      final voci = classificaVociDaCoordinate(parole!);
+      expect(voci.haDatiSufficienti, isTrue,
+          reason: 'dati insufficienti dal percorso a coordinate su $path');
       final totali = voci.totali!;
-
-      final risultato = parser.parse(testo!, estratti.ratei, voci);
 
       // --- lordo == TOTALE COMPETENZE ---
       expect(risultato.lordo, isNotNull,

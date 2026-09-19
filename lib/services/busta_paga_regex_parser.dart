@@ -140,6 +140,35 @@ class BustaPagaEstratti {
     this.nettoVerificato = false,
     this.layoutId = kLayoutPredefinito,
   });
+
+  /// Copia identica a questa ma con [layoutId] diverso (lo usa il registro
+  /// dei layout per stampare l'id del layout che ha prodotto i dati).
+  BustaPagaEstratti conLayoutId(String id) => BustaPagaEstratti(
+        periodo: periodo,
+        lordo: lordo,
+        netto: netto,
+        trattenute: trattenute,
+        straordinari: straordinari,
+        ferieMaturate: ferieMaturate,
+        ferieGodute: ferieGodute,
+        ferieResidue: ferieResidue,
+        rolMaturati: rolMaturati,
+        rolGoduti: rolGoduti,
+        rolResidui: rolResidui,
+        permessiGoduti: permessiGoduti,
+        permessiGodutiMese: permessiGodutiMese,
+        exFestivitaMaturate: exFestivitaMaturate,
+        exFestivitaGodute: exFestivitaGodute,
+        exFestivitaResidue: exFestivitaResidue,
+        oreLavorate: oreLavorate,
+        competenze: competenze,
+        tipo: tipo,
+        warnings: warnings,
+        lordoVerificato: lordoVerificato,
+        trattenuteVerificate: trattenuteVerificate,
+        nettoVerificato: nettoVerificato,
+        layoutId: id,
+      );
 }
 
 /// Un singolo rateo (maturato/goduto/residuo, più l'eventuale residuo

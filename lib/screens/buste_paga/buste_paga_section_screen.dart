@@ -394,8 +394,8 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
       }
 
       final contenuto = result.contenuto;
-      final layout = contenuto == null ? null : _layoutRegistry.rileva(contenuto);
-      final risultato = layout?.estrai(contenuto!);
+      final risultato =
+          contenuto == null ? null : _layoutRegistry.estrai(contenuto);
 
       if (risultato == null ||
           (risultato.netto == null && risultato.periodo == null)) {

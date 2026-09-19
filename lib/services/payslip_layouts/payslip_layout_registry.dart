@@ -1,3 +1,4 @@
+import '../busta_paga_regex_parser.dart';
 import 'job_layout.dart';
 import 'payslip_layout.dart';
 import 'pdf_contenuto.dart';
@@ -16,5 +17,13 @@ class PayslipLayoutRegistry {
       if (layout.riconosce(contenuto)) return layout;
     }
     return null;
+  }
+
+  /// Rileva il layout e ne estrae i dati, stampando `layout.id` su
+  /// `layoutId`: così nessun layout può dimenticare di dichiararsi.
+  /// `null` se nessun layout riconosce il PDF.
+  BustaPagaEstratti? estrai(PdfContenuto contenuto) {
+    final layout = rileva(contenuto);
+    return layout?.estrai(contenuto).conLayoutId(layout.id);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:buts/models/busta_paga.dart';
 import 'package:buts/services/busta_paga_regex_parser.dart';
 import 'package:buts/services/payslip_layouts/payslip_layout.dart';
 import 'package:buts/services/payslip_layouts/payslip_layout_registry.dart';
@@ -15,9 +16,11 @@ class _FakeLayout implements PayslipLayout {
   bool riconosce(PdfContenuto contenuto) =>
       (contenuto.testo ?? '').contains(firma);
 
+  // Volutamente NON imposta `layoutId`: deve pensarci il registro.
+
   @override
-  BustaPagaEstratti estrai(PdfContenuto contenuto) => BustaPagaEstratti(
-        trattenute: const {},
+  BustaPagaEstratti estrai(PdfContenuto contenuto) => const BustaPagaEstratti(
+        trattenute: {},
         straordinari: 0,
         ferieMaturate: 0,
         ferieGodute: 0,
@@ -26,8 +29,7 @@ class _FakeLayout implements PayslipLayout {
         rolGoduti: 0,
         rolResidui: 0,
         permessiGoduti: 0,
-        warnings: const [],
-        layoutId: id,
+        warnings: [],
       );
 }
 
@@ -58,6 +60,21 @@ void main() {
     test('testo assente -> null', () {
       final registro = PayslipLayoutRegistry([_FakeLayout('a', 'FIRMA-A')]);
       expect(registro.rileva(const PdfContenuto()), isNull);
+    });
+  });
+
+  group('PayslipLayoutRegistry.estrai', () {
+    test('stampa layout.id sul risultato anche se il layout lo dimentica', () {
+      final registro = PayslipLayoutRegistry([_FakeLayout('x', 'FIRMA-X')]);
+      final risultato = registro.estrai(const PdfContenuto(testo: 'FIRMA-X'));
+      expect(risultato, isNotNull);
+      expect(risultato!.layoutId, 'x');
+      expect(risultato.layoutId, isNot(kLayoutPredefinito));
+    });
+
+    test('nessun layout riconosce -> null', () {
+      final registro = PayslipLayoutRegistry([_FakeLayout('x', 'FIRMA-X')]);
+      expect(registro.estrai(const PdfContenuto(testo: 'altro')), isNull);
     });
   });
 }

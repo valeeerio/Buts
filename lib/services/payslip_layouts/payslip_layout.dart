@@ -10,5 +10,7 @@ abstract interface class PayslipLayout {
 
   bool riconosce(PdfContenuto contenuto);
 
+  /// Il `layoutId` del risultato NON va impostato qui: lo stampa
+  /// `PayslipLayoutRegistry.estrai` con [id].
   BustaPagaEstratti estrai(PdfContenuto contenuto);
 }
