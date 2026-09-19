@@ -13,6 +13,7 @@ import 'screens/buste_paga/buste_paga_section_screen.dart';
 import 'services/home_widget_launch.dart';
 import 'services/payslip_reminder_service.dart';
 import 'services/reminder_notifications.dart';
+import 'widgets/app_launch_overlay.dart';
 
 /// Subscription dell'ascolto "tap sul widget ad app già in esecuzione"
 /// (`registraAscoltoHomeWidgetClicked`), tenuta viva per l'intera sessione
@@ -108,7 +109,11 @@ void main() async {
 /// L'app è a sezione singola: Buste Paga è la root, nessuna sotto-navigazione
 /// radice (vedi CLAUDE.md).
 class ButsApp extends StatelessWidget {
-  const ButsApp({super.key, this.overrides = const []});
+  const ButsApp({
+    super.key,
+    this.overrides = const [],
+    this.mostraAnimazioneAvvio = true,
+  });
 
   /// Override dei provider Riverpod da iniettare sul `ProviderScope` radice.
   /// Vuoto di default (usato anche dai widget test, che non hanno bisogno di
@@ -117,20 +122,75 @@ class ButsApp extends StatelessWidget {
   /// [reminderSchedulerProvider].
   final List<Override> overrides;
 
+  /// Mostra l'animazione di avvio (anello) sopra l'archivio. I test la
+  /// disattivano per evitare timer/animazioni pendenti.
+  final bool mostraAnimazioneAvvio;
+
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
       overrides: overrides,
-      child: const CupertinoApp(
+      child: CupertinoApp(
         title: 'Buts',
         debugShowCheckedModeBanner: false,
-        theme: CupertinoThemeData(brightness: Brightness.dark),
-        localizationsDelegates: [
+        theme: const CupertinoThemeData(brightness: Brightness.dark),
+        localizationsDelegates: const [
           DefaultCupertinoLocalizations.delegate,
         ],
-        home: CupertinoPageScaffold(
-          child: BustePagaSectionScreen(),
-        ),
+        home: _ButsHome(mostraAnimazioneAvvio: mostraAnimazioneAvvio),
+      ),
+    );
+  }
+}
+
+class _ButsHome extends StatefulWidget {
+  const _ButsHome({required this.mostraAnimazioneAvvio});
+
+  final bool mostraAnimazioneAvvio;
+
+  @override
+  State<_ButsHome> createState() => _ButsHomeState();
+}
+
+class _ButsHomeState extends State<_ButsHome> {
+  late bool _animazioneAttiva = widget.mostraAnimazioneAvvio;
+  final _progress = ValueNotifier<double>(0);
+  // Vero quando l'archivio può aprire dialog/route (fine animazione, o subito
+  // se l'animazione è disattivata).
+  late final _avvioCompletato =
+      ValueNotifier<bool>(!widget.mostraAnimazioneAvvio);
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    _avvioCompletato.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // L'archivio (già popolato al primo frame) entra come unico blocco
+    // (opacità + salita) in sincrono con l'overlay, che sta sopra.
+    return CupertinoPageScaffold(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AppLaunchReveal(
+            progress: _animazioneAttiva ? _progress : null,
+            child: BustePagaSectionScreen(avvioCompletato: _avvioCompletato),
+          ),
+          if (_animazioneAttiva)
+            Positioned.fill(
+              child: AppLaunchOverlay(
+                progress: _progress,
+                onDone: () {
+                  if (!mounted) return;
+                  _avvioCompletato.value = true;
+                  setState(() => _animazioneAttiva = false);
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
