@@ -644,7 +644,7 @@ void main() {
 
 - [ ] **Step 2: Eseguirlo sul PDF di esempio**
 
-Run: `flutter test test/tmp_dump_layout_test.dart --dart-define=PAYSLIP_PDF="/Users/valeriomortella/Desktop/CEA M. BUSTA PAGA 07-2026.pdf"`
+Run: `flutter test test/tmp_dump_layout_test.dart --dart-define=PAYSLIP_PDF="<percorso locale del PDF di esempio>"`
 Expected: stampa testo linearizzato e parole (sinistra, destra, alto, testo) per ogni pagina.
 L'output resta in locale: contiene dati anagrafici, non va incollato nel repo.
 

@@ -33,8 +33,10 @@ modifiche a form/dettaglio/statistiche (il contratto di uscita non cambia).
   testuale non basta, serve l'estrazione per **coordinate** delle parole.
 - Dati presenti: netto, totale competenze (lordo), totale ritenute, ore
   lavorate, trattenute (IRPEF, addizionali, contributi), ratei Ferie/ROL come
-  saldi "a.p." (anno precedente) + "spett." (maturato del mese) + residuo
-  cumulato (verificato: Ferie 47,93+93,31=141,24; ROL 62,07+60,69−106,00=16,76).
+  saldi "a.p." (anno precedente) + "spett." (cumulato dell'anno corrente:
+  rateo mensile x mesi trascorsi) + residuo stampato (struttura verificata;
+  esempio fittizio: Ferie a.p. 10,00 + spett. 45,00 = residuo 55,00; ROL a.p.
+  20,00 + spett. 30,00 − goduti 40,00 = 10,00).
 - Documento di 2 pagine: i dati si leggono dalla pagina 2 (la pagina 1 ha una
   griglia presenze parziale con "SEGUE .."). **Da confermare in
   implementazione** sul PDF reale; il layout deve scegliere la pagina in modo
@@ -82,9 +84,14 @@ competenze, trattenute, ore, ratei). Riusa `VoceCompetenza`, `RateoCategoria`
 ecc. Warning di validazione (es. netto>lordo) restano gli stessi del contratto.
 
 Mappatura ratei (coerente col parser JOB, che ignora il riporto):
-- **maturato** = "spett." (accantonato nel mese);
+- **maturato** = "spett." (CUMULATO dell'anno corrente, rateo mensile x mesi
+  trascorsi; come nel layout JOB, dove residuo = residuo A.P. + maturato −
+  goduto, vedi `lib/services/busta_paga_regex_parser.dart`). Il valore
+  "rateo m.:NN,NN" NON va usato come maturato: va scartato in estrazione;
 - **goduto** = goduti cumulati;
 - **residuo** = residuo stampato, non ricalcolato.
+
+Da riconfermare con l'utente prima del Task 5.
 Ex festività: assenti nel layout di esempio → categoria vuota (`RateoCategoria.vuoto`).
 
 ### 4. Persistenza
