@@ -50,11 +50,12 @@ Nuova cartella `lib/services/payslip_layouts/`:
 - `payslip_layout.dart` — interfaccia `PayslipLayout`:
   - `String get id` (stabile, persistito in DB, es. `'job'`);
   - `bool riconosce(PdfContenuto contenuto)`;
-  - `Future<BustaPagaEstratti> estrai(PdfContenuto contenuto)`.
+  - `BustaPagaEstratti estrai(PdfContenuto contenuto)` (sincrona: il PDF è già letto in `PdfContenuto`).
 - `payslip_layout_registry.dart` — elenco ordinato di layout; `rileva(contenuto)`
   restituisce il primo che riconosce il PDF o `null`.
-- `job_layout.dart` — `JobLayout`: la logica JOB attuale **spostata senza
-  cambiare comportamento** (regex + funzioni a coordinate).
+- `job_layout.dart` — `JobLayout`: adattatore sottile sopra `BustaPagaRegexParser` e le
+  funzioni a coordinate esistenti, che **restano dove sono** (nessuno
+  spostamento di codice, rischio di regressione minimo).
 - `<nuovo>_layout.dart` — nuovo layout; nome definitivo da decidere con
   l'utente (nome neutro finché non noto il software paghe).
 
@@ -69,8 +70,8 @@ PDF → alert bloccante come oggi (il form non si apre).
 
 ### 2. Riconoscimento
 
-Ogni layout dichiara una firma testuale sul testo/parole. Per JOB la firma va
-ricavata dai PDF JOB già usati nei test (oggi non è esplicita). Test di
+Ogni layout dichiara una firma testuale sul testo/parole. Per JOB la firma è
+esplicita nel testo (`JOB - Copyright …`, presente nelle fixture dei test). Test di
 non-ambiguità: ogni fixture è riconosciuta da **uno solo** dei layout.
 L'ordine nel registro è deterministico; il primo che combacia vince.
 
@@ -106,8 +107,8 @@ Nuova colonna Drift `layout` (testo, default `'job'`), migrazione additiva
 
 ## Rischi
 
-- Firma JOB non esplicita → falsi positivi/negativi: mitigato dal test di
-  non-ambiguità.
+- Firma di un layout troppo generica → falsi positivi tra layout: mitigato dal
+  test di non-ambiguità.
 - Spostare `JobLayout` deve essere un puro refactor: i test esistenti sono la
   rete di sicurezza; nessun cambio di regex nello stesso passo.
 - Selezione pagina del nuovo layout basata su un solo PDF di esempio: cercare
