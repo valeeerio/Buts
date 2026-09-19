@@ -7,6 +7,13 @@ import 'pdf_contenuto.dart';
 const _xCompetenzeDestro = 561.4;
 const _tolleranzaX = 4.0;
 
+// Bordi destri delle 4 colonne dei ratei (a.p., spett., godute, residue), da
+// findings sez. 3. Ferie godute (~189) NON osservato: dedotto dall'etichetta.
+// Le colonne Ex festività sono IPOTIZZATE uguali a quelle Ferie (celle vuote
+// nell'unico PDF di esempio).
+const _colonneFerie = [109.8, 150.3, 189.0, 231.4];
+const _colonneRol = [271.9, 312.6, 353.0, 393.8];
+
 const _mesiAbbreviati = {
   'GEN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAG': 5, 'GIU': 6,
   'LUG': 7, 'AGO': 8, 'SET': 9, 'OTT': 10, 'NOV': 11, 'DIC': 12,
@@ -76,6 +83,33 @@ double? _valore(
     if (v != null) return v;
   }
   return null;
+}
+
+/// Legge una riga di ratei ancorata alla sua etichetta "a.p." ([etichettaAp]).
+/// I valori stanno a +12,8 pt (finestra +10..+16) e si assegnano per bordo
+/// destro di colonna. Cella assente = 0 (una cella vuota non produce parole).
+/// `null` se l'etichetta della riga non esiste sulla pagina.
+RateoCategoria? _rateo(
+  List<ParolaVoce> parole,
+  List<String> etichettaAp,
+  List<double> colonne,
+) {
+  final et = _etichetta(parole, etichettaAp);
+  if (et == null) return null;
+  double cella(double destro) =>
+      _valore(
+        parole,
+        dalTop: et.top + 10,
+        alTop: et.top + 16,
+        bordoDestro: destro,
+      ) ??
+      0.0;
+  return RateoCategoria(
+    residuoAnnoPrecedente: cella(colonne[0]),
+    maturato: cella(colonne[1]),
+    goduto: cella(colonne[2]),
+    residuo: cella(colonne[3]),
+  );
 }
 
 /// Indice dell'ULTIMA pagina che ha un valore sotto "Totale Competenze": le
@@ -179,18 +213,35 @@ BustaPagaEstratti classificaPrestampato(List<List<ParolaVoce>?> pagine) {
     if (nettoStampato == null) warnings.add('netto non trovato');
   }
 
+  final ferie = parole.isEmpty
+      ? null
+      : _rateo(parole, ['Ferie', 'a.p.'], _colonneFerie);
+  final rol =
+      parole.isEmpty ? null : _rateo(parole, ['ROL', 'a.p.'], _colonneRol);
+  final ex = parole.isEmpty
+      ? null
+      : _rateo(parole, ['Ex', 'fes.', 'a.p.'], _colonneFerie);
+  if (parole.isNotEmpty) {
+    if (ferie == null) warnings.add('dati ferie non trovati');
+    if (rol == null) warnings.add('dati ROL non trovati');
+    if (ex == null) warnings.add('dati ex festività non trovati');
+  }
+
   return BustaPagaEstratti(
     periodo: periodo,
     netto: nettoStampato,
     trattenute: const {},
     straordinari: 0,
-    ferieMaturate: 0,
-    ferieGodute: 0,
-    ferieResidue: 0,
-    rolMaturati: 0,
-    rolGoduti: 0,
-    rolResidui: 0,
-    permessiGoduti: 0,
+    ferieMaturate: ferie?.maturato ?? 0,
+    ferieGodute: ferie?.goduto ?? 0,
+    ferieResidue: ferie?.residuo ?? 0,
+    rolMaturati: rol?.maturato ?? 0,
+    rolGoduti: rol?.goduto ?? 0,
+    rolResidui: rol?.residuo ?? 0,
+    permessiGoduti: rol?.goduto ?? 0,
+    exFestivitaMaturate: ex?.maturato ?? 0,
+    exFestivitaGodute: ex?.goduto ?? 0,
+    exFestivitaResidue: ex?.residuo ?? 0,
     oreLavorate: oreLavorate,
     tipo: TipoBustaPaga.mensile,
     warnings: warnings,

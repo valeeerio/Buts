@@ -117,4 +117,46 @@ void main() {
     expect(r.netto, isNull);
     expect(r.warnings, contains('periodo non trovato'));
   });
+
+  group('ratei', () {
+    test('Ferie: spett. = maturato, residue = residuo stampato, godute vuote = 0',
+        () {
+      final r = classificaPrestampato(pagine);
+      expect(r.ferieMaturate, closeTo(35.0, 0.001));
+      expect(r.ferieGodute, closeTo(0.0, 0.001));
+      expect(r.ferieResidue, closeTo(45.0, 0.001));
+    });
+
+    test('ROL: maturati/goduti/residui; permessiGoduti = ROL goduti', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.rolMaturati, closeTo(56.0, 0.001));
+      expect(r.rolGoduti, closeTo(30.0, 0.001));
+      expect(r.rolResidui, closeTo(46.0, 0.001));
+      expect(r.permessiGoduti, closeTo(30.0, 0.001));
+      expect(r.permessiGodutiMese, 0);
+    });
+
+    test('Ex festività: etichetta presente e celle vuote -> 0', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.exFestivitaMaturate, 0);
+      expect(r.exFestivitaGodute, 0);
+      expect(r.exFestivitaResidue, 0);
+    });
+
+    test('la parola "rateo m.:NN,NN" non è un saldo', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.ferieMaturate, isNot(closeTo(5.0, 0.001)));
+    });
+
+    test('etichette assenti -> warning e zeri', () {
+      final r = classificaPrestampato([
+        [
+          for (final p in paginaDati())
+            if (p.testo != 'Ferie' && p.testo != 'ROL') p,
+        ],
+      ]);
+      expect(r.warnings, contains('dati ferie non trovati'));
+      expect(r.warnings, contains('dati ROL non trovati'));
+    });
+  });
 }
