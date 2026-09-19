@@ -227,7 +227,7 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
           'per vederla.',
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'OK',
           color: accent,
           onPressed: () => Navigator.of(context).pop(),
@@ -306,7 +306,7 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
           'Impostazioni > Buts > Notifiche.',
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'OK',
           color: accent,
           onPressed: () => Navigator.of(context).pop(),
@@ -578,7 +578,7 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
       message: message,
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'OK',
           color: accent,
           onPressed: () => Navigator.of(context).pop(),

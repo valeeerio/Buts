@@ -226,16 +226,20 @@ widget/token sono ancora state sostituite.
   per contenitori neutri, oppure riempimento pieno dell'accento (`AppColors.pulseAccent`, con
   gradiente sottile) per i blocchi di rilievo (es. netto del mese). Ombre minime/assenti, mai
   bagliori diffusi.
-- **Colori**: palette dark-first in `lib/theme/app_colors.dart` — `pulseBackground` (sfondo
+- **Colori**: palette in `lib/theme/app_colors.dart` — `pulseBackground` (sfondo
   pagina), `pulseSurface` (superficie tessera, un grado più chiara dello sfondo),
   `pulseAccent` (ciano/cobalto elettrico, accento primario e riempimento pieno dei blocchi di
   rilievo), `pulseTextPrimary`/`pulseTextSecondary`, `pulsePositive`/`pulseNegative` (stato
-  Confermato/Da confermare, alert). Light e dark mode restano **paritari**, stessa cura per
-  entrambi, sempre via `CupertinoDynamicColor`.
-- **Tipografia**: due font bundlati offline in `assets/fonts/` (mai `google_fonts` con fetch
-  di rete, l'app non ha connessione) — **Space Grotesk** (pesi 500/700/800) per titoli,
-  numeri, valori monetari/di maturazione: è l'elemento che rende l'identità "tipografia da
-  protagonista"; **Inter** (pesi 400/500/600) per corpo testo, label, UI. Ruoli tipografici in
+  Confermato/Da confermare, alert). **App solo dark mode dal 2026-09-10** (decisione
+  utente): ogni token è un `Color` fisso (il valore dark storico), non esiste più una
+  variante light — non usare più `CupertinoDynamicColor` per i token `pulse*` introdotti da
+  quella data in poi.
+- **Tipografia**: font di sistema ovunque (nessun `fontFamily` esplicito — su iOS risolve a
+  SF Pro Text/Display tramite `CupertinoTheme`), mai `google_fonts` con fetch di rete (l'app
+  non ha connessione). Fino al 2026-09-08 i ruoli tipografici Pulse usavano due font
+  bundlati offline in `assets/fonts/` (**Space Grotesk** per titoli/numeri, **Inter** per
+  corpo/label) — rimossi su richiesta esplicita dell'utente dopo aver visto lo stile del
+  widget home screen, che usava già solo il font di sistema. Ruoli tipografici in
   `lib/theme/app_text_styles.dart`.
 - **Forme**: angoli arrotondati con `BorderRadius.circular` (non più squircle/superellisse) —
   raggi in `AppRadius.pulse`/`AppRadius.pulseSmall`. `lib/widgets/squircle_clipper.dart` non è
@@ -277,8 +281,9 @@ precompilazione dati da PDF, nessun piano di sostituirlo.
 
 - Design tokens sempre da `lib/theme/`, mai colori/spaziature hardcoded nei widget.
 - Componenti riutilizzabili in `lib/widgets/`, non dentro le singole schermate.
-- Preferire `CupertinoDynamicColor.resolve(context)` per ogni colore, per garantire
-  che light/dark mode funzionino automaticamente.
+- L'app è solo dark mode dal 2026-09-10 (vedi "Stile visivo" sopra): i token colore in
+  `lib/theme/app_colors.dart` sono `Color` fissi, non serve più `CupertinoDynamicColor.resolve`
+  per i colori dell'app.
 
 ## Come collaborare su questo progetto (regole del coordinatore)
 

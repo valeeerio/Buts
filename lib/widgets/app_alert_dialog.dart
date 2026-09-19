@@ -4,6 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import 'flat_chip_button.dart';
+import 'pulse_icon.dart';
 
 /// Un bottone di `AppAlertDialog`: stesso identico componente
 /// (`FlatChipButton`, icona + testo, riempimento pieno) dei segmenti della
@@ -16,12 +17,19 @@ class AppAlertAction {
   final String label;
   final Color color;
   final IconData? icon;
+
+  /// Alternativa a [icon] per usare un glifo del set custom Pulse
+  /// (`PulseIcon`/`PulseIconGlyph`) al posto di un `IconData`
+  /// (`CupertinoIcons`) — stessa logica di priorità di
+  /// `FlatChipButton.pulseGlyph`: se presente ha priorità su [icon].
+  final PulseIconGlyph? pulseGlyph;
   final VoidCallback onPressed;
 
   const AppAlertAction({
     required this.label,
     required this.color,
     this.icon,
+    this.pulseGlyph,
     required this.onPressed,
   });
 }
@@ -114,6 +122,7 @@ class AppAlertDialog extends StatelessWidget {
                         Expanded(
                           child: FlatChipButton(
                             icon: actions[i].icon,
+                            pulseGlyph: actions[i].pulseGlyph,
                             label: actions[i].label,
                             color: actions[i].color,
                             onPressed: actions[i].onPressed,

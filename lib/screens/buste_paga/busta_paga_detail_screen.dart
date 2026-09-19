@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -558,7 +556,7 @@ class _BustaPagaDetailScreenState extends ConsumerState<BustaPagaDetailScreen> {
       message: message,
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'OK',
           color: accent,
           onPressed: () => Navigator.of(context).pop(),
@@ -705,13 +703,13 @@ class _BustaPagaDetailScreenState extends ConsumerState<BustaPagaDetailScreen> {
           '${diff.join('\n')}',
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.xmark,
+          pulseGlyph: PulseIconGlyph.close,
           label: 'Annulla',
           color: textSecondary,
           onPressed: () => Navigator.of(context).pop(),
         ),
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'Conferma',
           color: accent,
           onPressed: () async {
@@ -983,7 +981,7 @@ class _BustaPagaDetailScreenState extends ConsumerState<BustaPagaDetailScreen> {
                           title: 'Dati confermati',
                           actions: [
                             AppAlertAction(
-                              icon: CupertinoIcons.checkmark_alt,
+                              pulseGlyph: PulseIconGlyph.checkmark,
                               label: 'OK',
                               color: CupertinoDynamicColor.resolve(
                                   AppColors.pulseAccent, context),
@@ -1134,7 +1132,7 @@ class _ActionBar extends StatelessWidget {
             Expanded(
               child: slot(
                 FlatChipButton(
-                  icon: CupertinoIcons.checkmark_alt,
+                  pulseGlyph: PulseIconGlyph.checkmark,
                   label: 'Salva',
                   color: accent,
                   primary: true,
@@ -1146,7 +1144,7 @@ class _ActionBar extends StatelessWidget {
             Expanded(
               child: slot(
                 FlatChipButton(
-                  icon: CupertinoIcons.xmark,
+                  pulseGlyph: PulseIconGlyph.close,
                   label: 'Annulla',
                   color: secondaryAccent,
                   onPressed: onAnnulla,
@@ -1169,7 +1167,7 @@ class _ActionBar extends StatelessWidget {
                 flex: 7,
                 child: slot(
                   FlatChipButton(
-                    icon: CupertinoIcons.checkmark_alt,
+                    pulseGlyph: PulseIconGlyph.checkmark,
                     label: 'Conferma',
                     color: greenAccent,
                     onColor: AppColors.pulseOnPositive,
@@ -1183,7 +1181,7 @@ class _ActionBar extends StatelessWidget {
                 flex: 3,
                 child: slot(
                   FlatChipButton(
-                    icon: CupertinoIcons.pencil,
+                    pulseGlyph: PulseIconGlyph.edit,
                     label: 'Modifica',
                     color: accent,
                     primary: true,
@@ -1195,7 +1193,7 @@ class _ActionBar extends StatelessWidget {
               Expanded(
                 child: slot(
                   FlatChipButton(
-                    icon: CupertinoIcons.pencil,
+                    pulseGlyph: PulseIconGlyph.edit,
                     label: 'Modifica',
                     color: accent,
                     primary: true,
@@ -1212,23 +1210,20 @@ class _ActionBar extends StatelessWidget {
   }
 }
 
-/// Sfondo "chrome" traslucido/sfocato dietro ogni chip della barra flottante
-/// "Conferma/Modifica"/"Salva/Annulla": `BackdropFilter` con fill
-/// `pulseBackground` semi-trasparente, `ClipRect` come antenato diretto del
-/// `BackdropFilter` — vincolo critico per Impeller su device reale, vedi
-/// CLAUDE.md. Il clip arrotondato che allinea questo sfondo al chip
-/// sovrastante è applicato dal chiamante (`ClipRRect` in `_ActionBar.slot`),
-/// non qui, per garantire che sfondo e chip condividano esattamente lo
-/// stesso raggio e gli stessi bound.
+/// Sfondo "chrome" piatto dietro ogni chip della barra flottante
+/// "Conferma/Modifica"/"Salva/Annulla": riempimento a tinta piena
+/// `AppColors.pulseSurface` (stesso token delle superfici `PulseSurface`),
+/// niente `BackdropFilter`/blur — coerente con lo stile "Pulse" (vedi
+/// CLAUDE.md, sezione "Stile visivo": "nessun `BackdropFilter`/blur in
+/// nessuna superficie"). Sostituisce il blur ereditato dal redesign Liquid
+/// Glass precedente, rimasto per svista durante la migrazione a Pulse (nessun
+/// bug di rendering Impeller documentato per questo punto specifico). Il
+/// clip arrotondato che allinea questo sfondo al chip sovrastante è
+/// applicato dal chiamante (`ClipRRect` in `_ActionBar.slot`), non qui, per
+/// garantire che sfondo e chip condividano esattamente lo stesso raggio e gli
+/// stessi bound.
 Widget _floatingBarBackground(BuildContext context) {
   final fill =
-      CupertinoDynamicColor.resolve(AppColors.pulseBackground, context);
-  return ClipRect(
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: fill.withValues(alpha: 0.8)),
-      ),
-    ),
-  );
+      CupertinoDynamicColor.resolve(AppColors.pulseSurface, context);
+  return DecoratedBox(decoration: BoxDecoration(color: fill));
 }

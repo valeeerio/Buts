@@ -219,13 +219,13 @@ class _BustePagaArchivioViewState extends ConsumerState<BustePagaArchivioView> {
           '${bustaPagaPeriodoDisplay(bustaPaga)}?',
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.xmark,
+          pulseGlyph: PulseIconGlyph.close,
           label: 'Annulla',
           color: labelSecondary,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppAlertAction(
-          icon: CupertinoIcons.trash,
+          pulseGlyph: PulseIconGlyph.delete,
           label: 'Elimina',
           color: destructive,
           onPressed: () => Navigator.of(context).pop(true),
@@ -264,7 +264,7 @@ class _BustePagaArchivioViewState extends ConsumerState<BustePagaArchivioView> {
         message: 'Impossibile eliminare la busta paga, riprova.',
         actions: [
           AppAlertAction(
-            icon: CupertinoIcons.checkmark_alt,
+            pulseGlyph: PulseIconGlyph.checkmark,
             label: 'OK',
             color: accent,
             onPressed: () => Navigator.of(context).pop(),

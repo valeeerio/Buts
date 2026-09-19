@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/busta_paga.dart';
@@ -489,7 +487,7 @@ class _BustaPagaFormScreenState extends ConsumerState<BustaPagaFormScreen> {
       message: message,
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'OK',
           color: accent,
           onPressed: () => Navigator.of(context).pop(),
@@ -876,7 +874,7 @@ class _BustaPagaFormScreenState extends ConsumerState<BustaPagaFormScreen> {
                                           child:
                                               _floatingBarBackground(context)),
                                       FlatChipButton(
-                                        icon: CupertinoIcons.checkmark_alt,
+                                        pulseGlyph: PulseIconGlyph.checkmark,
                                         label: 'Salva',
                                         color: accent,
                                         primary: true,
@@ -907,7 +905,7 @@ class _BustaPagaFormScreenState extends ConsumerState<BustaPagaFormScreen> {
                                     Positioned.fill(
                                         child: _floatingBarBackground(context)),
                                     FlatChipButton(
-                                      icon: CupertinoIcons.xmark,
+                                      pulseGlyph: PulseIconGlyph.close,
                                       label: 'Annulla',
                                       color: secondaryAccent,
                                       // Stesso guard: uscire mentre un salvataggio è
@@ -958,26 +956,22 @@ class _BustaPagaFormScreenState extends ConsumerState<BustaPagaFormScreen> {
   }
 }
 
-/// Sfondo "chrome" traslucido/sfocato dietro ogni chip della barra
-/// flottante "Salva/Annulla": stesso `BackdropFilter` di `_pinnedBackground`
-/// in `buste_paga_archivio_view.dart` (stesso raggio di blur, stesso fill di
-/// opacità, stesso `ClipRect` come antenato diretto del `BackdropFilter` —
-/// vincolo critico per Impeller su device reale, vedi CLAUDE.md). Il clip
+/// Sfondo "chrome" piatto dietro ogni chip della barra flottante
+/// "Salva/Annulla": riempimento a tinta piena `AppColors.pulseSurface`
+/// (stesso token delle superfici `PulseSurface`), niente
+/// `BackdropFilter`/blur — coerente con lo stile "Pulse" (vedi CLAUDE.md,
+/// sezione "Stile visivo": "nessun `BackdropFilter`/blur in nessuna
+/// superficie"). Sostituisce il blur ereditato dal redesign Liquid Glass
+/// precedente, rimasto per svista durante la migrazione a Pulse (nessun bug
+/// di rendering Impeller documentato per questo punto specifico). Il clip
 /// arrotondato che allinea questo sfondo al chip sovrastante è applicato dal
 /// chiamante (`ClipRRect` attorno a ciascuno slot della `Row`), non qui, per
 /// garantire che sfondo e chip condividano esattamente lo stesso raggio e
 /// gli stessi bound.
 Widget _floatingBarBackground(BuildContext context) {
   final fill =
-      CupertinoDynamicColor.resolve(AppColors.pulseBackground, context);
-  return ClipRect(
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: fill.withValues(alpha: 0.8)),
-      ),
-    ),
-  );
+      CupertinoDynamicColor.resolve(AppColors.pulseSurface, context);
+  return DecoratedBox(decoration: BoxDecoration(color: fill));
 }
 
 /// Banner informativo fisso, sempre visibile mentre `_valoriDaConferma ==

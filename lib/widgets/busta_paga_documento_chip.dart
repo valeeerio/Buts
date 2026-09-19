@@ -82,7 +82,7 @@ class BustaPagaDocumentoChip extends StatelessWidget {
       message: messaggio,
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.checkmark_alt,
+          pulseGlyph: PulseIconGlyph.checkmark,
           label: 'OK',
           color: accent,
           onPressed: () => Navigator.of(context).pop(),
