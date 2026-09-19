@@ -27,11 +27,10 @@ niente account, i dati restano sempre sul telefono.
 
 Il sistema visivo dell'app si chiama **"Pulse"**: bold, dark-first,
 ispirato ai prodotti fintech moderni — non il look Flutter/Material di
-default. Nessun asset generico: tipografia (Space Grotesk per i numeri e i
-titoli, Inter per il resto) bundlata offline nel repo, icone disegnate ad
-hoc invece di un set standard, superfici a colore pieno senza effetti di
-vetro/blur. Light e dark mode ricevono la stessa cura, sempre risolti
-dinamicamente in base al tema di sistema.
+default. Nessun asset generico: tipografia di sistema (SF Pro via
+`CupertinoTheme`, nessun font bundlato), icone disegnate ad hoc invece di
+un set standard, superfici a colore pieno senza effetti di vetro/blur.
+L'app è **solo dark mode**.
 
 ## Stack tecnico
 
@@ -72,7 +71,7 @@ lib/
 
 `lib/widgets/` raggruppa per famiglia di stile:
 - **Pulse** (`pulse_surface.dart`, `pulse_icon.dart`, `pulse_section_card.dart`,
-  `pulse_mesh_background.dart`, `progress_ring_tile.dart`, `spring_button.dart`) —
+  `pulse_mesh_background.dart`, `value_tile.dart`, `spring_button.dart`) —
   il materiale a colore pieno standard di card/sezioni/icone.
 - **Flat, per barre e popup** (`flat_chip_button.dart`, `app_alert_dialog.dart`) —
   sotto-navigazione, barre di azione e dialoghi di conferma.
