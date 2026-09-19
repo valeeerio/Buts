@@ -209,6 +209,30 @@ sotto-navigazione è la sidecar flottante in basso già descritta sopra
 Buste Paga, persistiti su Drift (`busteRepositoryProvider`, `ultimaBustaPagaProvider`
 in `lib/providers/buste_paga_provider.dart`).
 
+**Caricamento dati all'avvio (2026-09-19)**: `main()` apre il database e legge le
+buste paga PRIMA di `runApp` (`leggiBusteResilienti` in `buste_paga_provider.dart`:
+una sola `select`, ripiego riga per riga solo se una riga ha JSON corrotto),
+iniettandole con gli override `databaseProvider` + `busteInizialiProvider`: il
+primo frame ha già l'archivio popolato e `caricamentoCompletato` è true. Senza
+override (test) `BustePagaNotifier` resta sul caricamento lazy. `_sweepPdfOrfani`
+considera referenziati anche i `fileOrigine` delle righe corrotte scartate dallo
+stato, così non ne cancella mai il PDF.
+
+**Animazione di avvio (2026-09-19)**: `lib/widgets/app_launch_overlay.dart`
+(`AppLaunchOverlay`, `AppLaunchReveal`) — l'anello dell'icona (arco aperto di 285°,
+colore `AppColors.brandRing`, ciano dell'icona, diverso da `pulseAccent`) si chiude e
+poi si allarga svanendo sull'archivio; 1,5 s in totale, con "Riduci movimento" solo
+una dissolvenza da 200 ms. Variante scelta dall'utente: "A · Apertura". L'archivio
+entra come blocco unico (opacità + salita di 14 px), non a blocchi sfalsati. La
+launch screen nativa (`LaunchImage` in `ios/Runner/Assets.xcassets`) contiene
+l'anello fermo, così il primo frame nativo e quello Flutter coincidono; iOS mette in
+cache le launch screen, per vederla aggiornata può servire disinstallare l'app.
+`AppLaunchReveal` mantiene SEMPRE la stessa struttura di widget (mai cambiarla a fine
+animazione: rimonterebbe `BustePagaSectionScreen` perdendo stato). Onboarding
+promemoria e consumo di `pendingImportRequest`/`pendingBustaDetailId` attendono
+`avvioCompletato` (parametro di `BustePagaSectionScreen`). `ButsApp` ha
+`mostraAnimazioneAvvio` (default true), che i test disattivano.
+
 ## Stile visivo — non negoziabile senza conferma esplicita dell'utente
 
 Direzione: **"Pulse"**, sistema visivo bold/dark-first ispirato ai prodotti fintech moderni

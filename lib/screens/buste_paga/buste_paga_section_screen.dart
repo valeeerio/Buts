@@ -134,6 +134,12 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
     pendingImportRequest.removeListener(_consumaPendingImportRequestSePresente);
     pendingBustaDetailId
         .removeListener(_consumaPendingBustaDetailIdSePresente);
+    final listener = _avvioListener;
+    if (listener != null) widget.avvioCompletato?.removeListener(listener);
+    _avvioListener = null;
+    final completer = _avvioCompleter;
+    _avvioCompleter = null;
+    if (completer != null && !completer.isCompleted) completer.complete();
     _searchController.dispose();
     _pageController.dispose();
     super.dispose();
@@ -163,13 +169,16 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
     }
   }
 
-  /// Se l'utente ha appena toccato una notifica di promemoria (a caldo,
-  /// osservato qui, o a freddo, già impostato da `main()` prima ancora che
-  /// questa schermata esistesse), riporta il flag a `false` e avvia
-  /// direttamente il flusso di import — stesso identico percorso del "+",
-  /// nessuna logica di import duplicata.
+  /// `true` se l'animazione di avvio è conclusa (o non c'è): finché è
+  /// `false`, onboarding e richieste pendenti restano in attesa.
   bool get _avvioCompleto => widget.avvioCompletato?.value ?? true;
 
+  VoidCallback? _avvioListener;
+  Completer<void>? _avvioCompleter;
+
+  /// Si completa quando `widget.avvioCompletato` diventa `true` (subito se
+  /// già vero o assente). Il listener è rimosso in [dispose], che completa
+  /// anche il [Completer] pendente: il chiamante ricontrolla `mounted`.
   Future<void> _attendiAvvioCompletato() {
     final avvio = widget.avvioCompletato;
     if (avvio == null || avvio.value) return Future.value();
@@ -177,13 +186,22 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
     void listener() {
       if (!avvio.value) return;
       avvio.removeListener(listener);
+      _avvioListener = null;
+      _avvioCompleter = null;
       completer.complete();
     }
 
+    _avvioListener = listener;
+    _avvioCompleter = completer;
     avvio.addListener(listener);
     return completer.future;
   }
 
+  /// Se l'utente ha appena toccato una notifica di promemoria (a caldo,
+  /// osservato qui, o a freddo, già impostato da `main()` prima ancora che
+  /// questa schermata esistesse), riporta il flag a `false` e avvia
+  /// direttamente il flusso di import — stesso identico percorso del "+",
+  /// nessuna logica di import duplicata.
   void _consumaPendingImportRequestSePresente() {
     if (!_avvioCompleto) return;
     if (!pendingImportRequest.value) return;
