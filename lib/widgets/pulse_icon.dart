@@ -25,6 +25,8 @@ enum PulseIconGlyph {
   chart,
   filter,
   cycle,
+  bell,
+  bellSlash,
 }
 
 /// Icona vettoriale custom, disegnata con `CustomPainter` invece che con
@@ -346,6 +348,31 @@ class _PulseIconPainter extends CustomPainter {
         }
         break;
 
+      case PulseIconGlyph.bell:
+        _drawBell(canvas, size, stroke);
+        break;
+
+      case PulseIconGlyph.bellSlash:
+        // Campana con taglio diagonale: uno strato cancella (BlendMode.clear)
+        // una fascia più larga attorno alla barra, poi la barra è tracciata
+        // sopra, così il taglio resta pulito anche a 22 px.
+        final slashStart = Offset(w * 0.20, h * 0.16);
+        final slashEnd = Offset(w * 0.80, h * 0.84);
+        canvas.saveLayer(Offset.zero & size, Paint());
+        _drawBell(canvas, size, stroke);
+        canvas.drawLine(
+          slashStart,
+          slashEnd,
+          Paint()
+            ..blendMode = BlendMode.clear
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = stroke.strokeWidth * 2.6
+            ..strokeCap = StrokeCap.round,
+        );
+        canvas.restore();
+        canvas.drawLine(slashStart, slashEnd, stroke);
+        break;
+
       case PulseIconGlyph.chart:
         canvas.drawLine(
           Offset(w * 0.24, h * 0.8),
@@ -364,6 +391,25 @@ class _PulseIconPainter extends CustomPainter {
         );
         break;
     }
+  }
+
+  void _drawBell(Canvas canvas, Size size, Paint stroke) {
+    final w = size.width;
+    final h = size.height;
+    // Calotta arrotondata + bordo inferiore, poi battaglio sotto.
+    final body = Path()
+      ..moveTo(w * 0.22, h * 0.70)
+      ..cubicTo(w * 0.30, h * 0.62, w * 0.30, h * 0.52, w * 0.30, h * 0.42)
+      ..cubicTo(w * 0.30, h * 0.26, w * 0.40, h * 0.18, w * 0.50, h * 0.18)
+      ..cubicTo(w * 0.60, h * 0.18, w * 0.70, h * 0.26, w * 0.70, h * 0.42)
+      ..cubicTo(w * 0.70, h * 0.52, w * 0.70, h * 0.62, w * 0.78, h * 0.70)
+      ..close();
+    canvas.drawPath(body, stroke);
+    canvas.drawLine(
+      Offset(w * 0.42, h * 0.84),
+      Offset(w * 0.58, h * 0.84),
+      stroke,
+    );
   }
 
   @override

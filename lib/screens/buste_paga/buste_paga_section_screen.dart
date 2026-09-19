@@ -309,7 +309,7 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
           'di iOS per le notifiche.',
       actions: [
         AppAlertAction(
-          icon: CupertinoIcons.bell,
+          pulseGlyph: PulseIconGlyph.bell,
           label: 'Attiva',
           color: accent,
           onPressed: () async {
@@ -323,7 +323,7 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
           },
         ),
         AppAlertAction(
-          icon: CupertinoIcons.bell_slash,
+          pulseGlyph: PulseIconGlyph.bellSlash,
           label: 'Non ora',
           color: secondary,
           onPressed: () {
