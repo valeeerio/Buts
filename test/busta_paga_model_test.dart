@@ -2,6 +2,27 @@ import 'package:buts/models/busta_paga.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('layout: default job e copyWith', () {
+    final b = BustaPaga(
+      id: 'x',
+      periodo: DateTime(2026, 7),
+      lordo: 0,
+      netto: 0,
+      trattenute: const {},
+      straordinari: 0,
+      ferieMaturate: 0,
+      ferieGodute: 0,
+      ferieResidue: 0,
+      rolMaturati: 0,
+      rolGoduti: 0,
+      rolResidui: 0,
+      permessiGoduti: 0,
+      oreLavorate: 0,
+    );
+    expect(b.layout, 'job');
+    expect(b.copyWith(layout: 'altro').layout, 'altro');
+  });
+
   group('computeLordo', () {
     test('somma gli importi di tutte le voci', () {
       const competenze = [

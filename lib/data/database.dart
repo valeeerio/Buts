@@ -147,6 +147,11 @@ class BustePagaTable extends Table {
         Constant(TipoBustaPaga.mensile.index),
       )();
 
+  /// Layout PDF da cui la busta è stata importata (vedi `PayslipLayout.id`).
+  /// Default `job` per compatibilità con le righe create prima di v7.
+  TextColumn get layout =>
+      text().withDefault(const Constant(kLayoutPredefinito))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -177,7 +182,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -234,6 +239,12 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(
                 bustePagaTable, bustePagaTable.exFestivitaResidue);
           }
+          // v6 -> v7: nuova colonna `layout` (layout PDF di origine, vedi
+          // PayslipLayout) — migrazione additiva, le righe esistenti
+          // ricevono il default 'job', nessun dato esistente toccato.
+          if (from < 7) {
+            await m.addColumn(bustePagaTable, bustePagaTable.layout);
+          }
         },
       );
 }
@@ -266,6 +277,7 @@ extension BustaPagaRowMapping on BustePagaTableData {
       competenze: competenze,
       statoVerifica: statoVerifica,
       tipo: tipo,
+      layout: layout,
     );
   }
 }
@@ -295,6 +307,7 @@ extension BustaPagaDomainMapping on BustaPaga {
       competenze: Value(competenze),
       statoVerifica: Value(statoVerifica),
       tipo: Value(tipo),
+      layout: Value(layout),
     );
   }
 }

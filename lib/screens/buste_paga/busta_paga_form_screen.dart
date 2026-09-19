@@ -614,6 +614,7 @@ class _BustaPagaFormScreenState extends ConsumerState<BustaPagaFormScreen> {
       oreLavorate: _parse(_oreLavorateController),
       competenze: competenze,
       tipo: _tipo,
+      layout: widget.estratti.layoutId,
       statoVerifica: _valoriDaConferma
           ? StatoVerificaBustaPaga.daConfermare
           : StatoVerificaBustaPaga.confermato,

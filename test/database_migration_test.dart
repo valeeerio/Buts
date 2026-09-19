@@ -9,7 +9,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 /// Copre il percorso di migrazione `AppDatabase.migration.onUpgrade`
 /// (`lib/data/database.dart`, circa righe 187-236), da uno schema v3 fino
-/// all'attuale `schemaVersion => 6`, con righe di dati preesistenti nella
+/// all'attuale `schemaVersion => 7`, con righe di dati preesistenti nella
 /// tabella `BustePagaTable`.
 ///
 /// Ad oggi nessun test copre `onUpgrade`: gli altri test Drift del progetto
@@ -18,7 +18,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 /// sempre da `onCreate` già a schema corrente. Questo è un rischio concreto:
 /// ci sono già buste paga salvate su device reali con schemi precedenti a
 /// v6, e ogni step additivo (v3->v4 `tipo`, v4->v5 `competenze`/
-/// `permessiGodutiMese`, v5->v6 le tre colonne ex festività) deve applicarsi
+/// `permessiGodutiMese`, v5->v6 le tre colonne ex festività, v6->v7 `layout`) deve applicarsi
 /// senza perdere né alterare i dati già presenti.
 ///
 /// Il DB v3 di partenza viene creato con `package:sqlite3` direttamente
@@ -27,7 +27,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 /// dopo v3 (`tipo`, `competenze`, `permessi_goduti_mese`,
 /// `ex_festivita_maturate/godute/residue`) e impostando
 /// `PRAGMA user_version = 3`. Poi lo stesso file viene riaperto con
-/// `AppDatabase.forTesting`, che forza l'esecuzione di `onUpgrade` da 3 a 6
+/// `AppDatabase.forTesting`, che forza l'esecuzione di `onUpgrade` da 3 a 7
 /// (`schemaVersion` attuale) alla prima query.
 void main() {
   late Directory tempDir;
@@ -45,7 +45,7 @@ void main() {
   });
 
   /// Crea il file sqlite con lo schema v3 (nessuna delle colonne aggiunte in
-  /// v4/v5/v6) e una riga di dati realistica, tramite `package:sqlite3`
+  /// v4/v5/v6/v7) e una riga di dati realistica, tramite `package:sqlite3`
   /// diretto (bypassa completamente Drift, come farebbe un DB reale creato
   /// da una versione precedente dell'app).
   void seedSchemaV3() {
@@ -87,7 +87,7 @@ void main() {
     raw.close();
   }
 
-  group('AppDatabase — migrazione onUpgrade v3 -> v6 con dati preesistenti',
+  group('AppDatabase — migrazione onUpgrade v3 -> v7 con dati preesistenti',
       () {
     test(
         'righe preesistenti restano leggibili e intatte, nuove colonne '
@@ -133,11 +133,12 @@ void main() {
       expect(riga.exFestivitaMaturate, closeTo(0.0, 0.001));
       expect(riga.exFestivitaGodute, closeTo(0.0, 0.001));
       expect(riga.exFestivitaResidue, closeTo(0.0, 0.001));
+      expect(riga.layout, 'job'); // default della colonna aggiunta in v7
     });
 
     test(
         'dopo la migrazione è possibile inserire una nuova riga con tutte '
-        'le colonne, incluse quelle aggiunte in v4/v5/v6', () async {
+        'le colonne, incluse quelle aggiunte in v4/v5/v6/v7', () async {
       seedSchemaV3();
 
       final db = AppDatabase.forTesting(NativeDatabase(dbFile));
@@ -173,6 +174,7 @@ void main() {
           ),
         ],
         tipo: TipoBustaPaga.tredicesima,
+        layout: 'altro',
       );
 
       await db
@@ -184,6 +186,7 @@ void main() {
 
       final riletta = righe.firstWhere((r) => r.id == 'bp-nuova-2026-01');
       expect(riletta.tipo, TipoBustaPaga.tredicesima);
+      expect(riletta.layout, 'altro');
       expect(riletta.competenze, hasLength(1));
       expect(riletta.exFestivitaMaturate, closeTo(3.0, 0.001));
     });

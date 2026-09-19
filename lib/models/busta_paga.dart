@@ -128,6 +128,10 @@ class BustaPaga {
   final StatoVerificaBustaPaga statoVerifica;
   final TipoBustaPaga tipo;
 
+  /// Layout PDF di origine, vedi `PayslipLayout.id`; `job` per le buste
+  /// salvate prima dell'introduzione del campo.
+  final String layout;
+
   const BustaPaga({
     required this.id,
     required this.periodo,
@@ -151,6 +155,7 @@ class BustaPaga {
     this.competenze = const [],
     this.statoVerifica = StatoVerificaBustaPaga.confermato,
     this.tipo = TipoBustaPaga.mensile,
+    this.layout = kLayoutPredefinito,
   });
 
   BustaPaga copyWith({
@@ -176,6 +181,7 @@ class BustaPaga {
     List<VoceCompetenza>? competenze,
     StatoVerificaBustaPaga? statoVerifica,
     TipoBustaPaga? tipo,
+    String? layout,
   }) {
     return BustaPaga(
       id: id ?? this.id,
@@ -202,6 +208,7 @@ class BustaPaga {
       competenze: competenze ?? this.competenze,
       statoVerifica: statoVerifica ?? this.statoVerifica,
       tipo: tipo ?? this.tipo,
+      layout: layout ?? this.layout,
     );
   }
 }
