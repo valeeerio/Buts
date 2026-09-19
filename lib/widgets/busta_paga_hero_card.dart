@@ -136,7 +136,7 @@ class BustaPagaHeroCard extends StatelessWidget {
                                 horizontal: AppSpacing.xs),
                             child: PulseIcon(
                                 glyph: PulseIconGlyph.chevronDown,
-                                size: 12,
+                                size: 14,
                                 color: textSecondary),
                           ),
                         ),

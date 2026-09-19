@@ -149,21 +149,31 @@ class FlatChipButton extends StatelessWidget {
   }
 
   Widget _content(Color contentColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (pulseGlyph != null) ...[
-          PulseIcon(glyph: pulseGlyph!, size: 18, color: contentColor),
-          const SizedBox(width: AppSpacing.xs),
-        ] else if (icon != null) ...[
-          Icon(icon, size: 18, color: contentColor),
-          const SizedBox(width: AppSpacing.xs),
-        ],
-        Text(
-          label,
-          style: AppTextStyles.cardAmount.copyWith(color: contentColor),
+    // `SizedBox(width: infinity)` riempie la larghezza massima ricevuta (tutti
+    // gli usi sono in `Expanded`/vincoli limitati); `FittedBox` riduce solo se
+    // il contenuto non ci sta, altrimenti resta centrato a dimensione naturale.
+    return SizedBox(
+      width: double.infinity,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (pulseGlyph != null) ...[
+              PulseIcon(glyph: pulseGlyph!, size: 22, color: contentColor),
+              const SizedBox(width: AppSpacing.xs),
+            ] else if (icon != null) ...[
+              Icon(icon, size: 22, color: contentColor),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            Text(
+              label,
+              style: AppTextStyles.cardAmount.copyWith(color: contentColor),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

@@ -132,19 +132,23 @@ class _PulseIconPainter extends CustomPainter {
         break;
 
       case PulseIconGlyph.edit:
-        canvas.drawLine(
-          Offset(w * 0.22, h * 0.70),
-          Offset(w * 0.42, h * 0.70),
-          stroke,
-        );
+        // Matita solo contorno (vuota), ingrandita nel box con tratto
+        // dedicato più spesso per reggere il peso del testo nei chip.
+        final body = Path()
+          ..moveTo(w * 0.14, h * 0.86)
+          ..lineTo(w * 0.20, h * 0.60)
+          ..lineTo(w * 0.62, h * 0.18)
+          ..lineTo(w * 0.82, h * 0.38)
+          ..lineTo(w * 0.40, h * 0.80)
+          ..close();
         canvas.drawPath(
-          Path()
-            ..moveTo(w * 0.28, h * 0.64)
-            ..lineTo(w * 0.64, h * 0.28)
-            ..lineTo(w * 0.78, h * 0.42)
-            ..lineTo(w * 0.42, h * 0.78)
-            ..close(),
-          stroke,
+          body,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = size.shortestSide * 0.11
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round,
         );
         break;
 

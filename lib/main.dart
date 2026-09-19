@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'data/database.dart';
+import 'models/busta_paga.dart';
+import 'providers/buste_paga_provider.dart';
 import 'providers/reminder_scheduler_provider.dart';
 import 'screens/buste_paga/buste_paga_section_screen.dart';
 import 'services/home_widget_launch.dart';
@@ -24,6 +27,16 @@ late final StreamSubscription<Uri?> _homeWidgetClickSub;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('it_IT');
+
+  // Avvia subito la lettura del DB, prima delle init dei promemoria/widget,
+  // così procede in parallelo (le Future partono eagerly). Gli errori sono
+  // gestiti più sotto, all'await; `ignore()` evita l'errore "unhandled" se le
+  // init sotto falliscono/ritardano prima che la Future venga attesa. Il
+  // costruttore `AppDatabase()` apre la connessione in modo lazy e
+  // `leggiBusteResilienti` è `async` (non lancia mai in modo sincrono), quindi
+  // non serve un try/catch attorno a questa parte.
+  final db = AppDatabase();
+  final busteFuture = leggiBusteResilienti(db)..ignore();
 
   final reminderScheduler = LocalNotificationsScheduler();
   // `null` finché la costruzione sotto non va a buon fine: resta `null` se
@@ -64,9 +77,24 @@ void main() async {
     // semplicemente senza notifiche funzionanti in questa sessione.
   }
 
+  // Precaricamento DB: la lettura parte subito, in parallelo con le init
+  // sopra, e qui la si attende (di norma già completata). Un errore non
+  // blocca l'avvio: senza override si ricade sul caricamento lazy.
+  List<BustaPaga>? buste;
+  try {
+    buste = await busteFuture;
+  } catch (e) {
+    debugPrint('Precaricamento buste paga fallito, ripiego sul lazy: $e');
+    buste = null;
+  }
+
   runApp(
     ButsApp(
       overrides: [
+        // Il DB già aperto viene riusato anche se il precaricamento è
+        // fallito (in tal caso il notifier ricade sul caricamento lazy).
+        databaseProvider.overrideWithValue(db),
+        if (buste != null) busteInizialiProvider.overrideWithValue(buste),
         reminderSchedulerProvider.overrideWithValue(reminderScheduler),
         if (payslipReminderService != null)
           payslipReminderServiceProvider.overrideWithValue(
