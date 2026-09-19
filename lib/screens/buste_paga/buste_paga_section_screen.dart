@@ -8,8 +8,8 @@ import '../../models/busta_paga.dart';
 import '../../providers/buste_paga_provider.dart';
 import '../../providers/home_widget_provider.dart';
 import '../../providers/reminder_scheduler_provider.dart';
-import '../../services/busta_paga_regex_parser.dart';
 import '../../services/home_widget_launch.dart';
+import '../../services/payslip_layouts/payslip_layout_registry.dart';
 import '../../services/pdf_import_service.dart';
 import '../../services/reminder_notifications.dart';
 import '../../theme/app_colors.dart';
@@ -68,7 +68,7 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
   // effettivamente mostrata, anche a metà di un'animazione indotta dal tap).
   final _pageController = PageController();
   final _pdfImportService = const PdfImportService();
-  final _regexParser = const BustaPagaRegexParser();
+  final _layoutRegistry = PayslipLayoutRegistry.standard;
   bool _importingPdf = false;
   bool _searchActive = false;
   final _searchController = TextEditingController();
@@ -393,10 +393,9 @@ class _BustePagaSectionScreenState extends ConsumerState<BustePagaSectionScreen>
           break;
       }
 
-      final testo = result.extractedText;
-      final risultato = testo == null
-          ? null
-          : _regexParser.parse(testo, result.ratei, result.voci);
+      final contenuto = result.contenuto;
+      final layout = contenuto == null ? null : _layoutRegistry.rileva(contenuto);
+      final risultato = layout?.estrai(contenuto!);
 
       if (risultato == null ||
           (risultato.netto == null && risultato.periodo == null)) {

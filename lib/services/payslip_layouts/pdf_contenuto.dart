@@ -1,4 +1,9 @@
-/// Parola di una pagina con le sue coordinate (origine in alto a sinistra).
+/// Una singola parola della pagina PDF ridotta ai soli dati che servono a
+/// `classificaVociDaCoordinate`: il testo grezzo e le coordinate usate come
+/// ancora per riga/colonna (bordo superiore Y, bordo sinistro X, bordo
+/// destro X) — a differenza di `ParolaRateo` serve anche il bordo sinistro,
+/// necessario per ricostruire testo libero allineato a sinistra (descrizioni
+/// di voci/contributi), non solo colonne numeriche allineate a destra.
 typedef ParolaVoce = ({
   String testo,
   double bordoSuperiore,

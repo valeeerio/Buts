@@ -21,46 +21,31 @@ enum PdfImportStatus { success, cancelled, noExtractableText, error }
 class PdfImportResult {
   final PdfImportStatus status;
   final String? filePath;
-  final String? extractedText;
   final String? errorMessage;
 
-  /// Ratei (Ferie, Permessi R.O.L., Ex festività) letti per COORDINATE
-  /// dalla tabella "RATEI" della prima pagina del PDF — vedi
-  /// [PdfImportService.estraiDaBytes] e la doc di libreria in
-  /// `busta_paga_regex_parser.dart`. `null` quando l'estrazione per
-  /// coordinate non ha riconosciuto la tabella (mai un errore bloccante:
-  /// resta comunque disponibile [extractedText] per il percorso testuale
-  /// di fallback in [BustaPagaRegexParser.parse]).
-  final RateiEstrattiDaCoordinate? ratei;
+  /// Contenuto letto dal PDF (testo linearizzato + parole con coordinate per
+  /// pagina), da passare al layout rilevato dal registro: i ratei/voci per
+  /// coordinate li calcola il layout, non l'import. `null` per gli esiti
+  /// diversi da [PdfImportStatus.success].
+  final PdfContenuto? contenuto;
 
-  /// Voci (tabella "VOCE/DESCRIZIONE/.../TRATTENUTE/COMPETENZE", contributi
-  /// C/DIPENDENTE, IRPEF trattenuta, riga totali) lette per COORDINATE dalla
-  /// prima pagina del PDF — vedi [PdfImportService.estraiDaBytes] e
-  /// [classificaVociDaCoordinate]. Stessa natura "mai bloccante" di [ratei]:
-  /// `null` quando l'estrazione per coordinate non ha riconosciuto la
-  /// tabella, con [extractedText] sempre disponibile come fallback.
-  final VociEstratteDaCoordinate? voci;
+  /// Testo linearizzato del PDF (scorciatoia per [contenuto]`?.testo`).
+  String? get extractedText => contenuto?.testo;
 
   const PdfImportResult._(
     this.status, {
     this.filePath,
-    this.extractedText,
     this.errorMessage,
-    this.ratei,
-    this.voci,
+    this.contenuto,
   });
 
   const PdfImportResult.success(
     String filePath, {
-    String? extractedText,
-    RateiEstrattiDaCoordinate? ratei,
-    VociEstratteDaCoordinate? voci,
+    PdfContenuto? contenuto,
   }) : this._(
           PdfImportStatus.success,
           filePath: filePath,
-          extractedText: extractedText,
-          ratei: ratei,
-          voci: voci,
+          contenuto: contenuto,
         );
 
   const PdfImportResult.cancelled() : this._(PdfImportStatus.cancelled);
@@ -96,8 +81,8 @@ class PdfImportService {
     try {
       final bytes = await picked.readAsBytes();
 
-      final estratti = estraiDaBytes(bytes);
-      final text = estratti.testo;
+      final contenuto = leggiContenuto(bytes);
+      final text = contenuto.testo;
       // Soglia minima per distinguere un PDF testuale da uno scansionato
       // (che a volte espone comunque qualche carattere spurio di metadata).
       if (text == null || text.trim().length <= 20) {
@@ -105,12 +90,7 @@ class PdfImportService {
       }
 
       final targetPath = await _copyToAppDocuments(picked.name, bytes);
-      return PdfImportResult.success(
-        targetPath,
-        extractedText: text,
-        ratei: estratti.ratei,
-        voci: estratti.voci,
-      );
+      return PdfImportResult.success(targetPath, contenuto: contenuto);
     } catch (e) {
       return PdfImportResult.error(e.toString());
     }
@@ -134,10 +114,28 @@ class PdfImportService {
     }
   }
 
+  /// Legge il PDF una sola volta: testo linearizzato + parole con coordinate
+  /// di OGNI pagina (pagina illeggibile = `null`, mai un'eccezione). I layout
+  /// decidono quali pagine usare.
+  PdfContenuto leggiContenuto(List<int> bytes) {
+    final document = PdfDocument(inputBytes: bytes);
+    try {
+      return PdfContenuto(
+        testo: PdfTextExtractor(document).extractText(),
+        paroleAPagina: [
+          for (var i = 0; i < document.pages.count; i++)
+            _paroleDiPagina(document, i),
+        ],
+      );
+    } finally {
+      document.dispose();
+    }
+  }
+
   /// Testo linearizzato (percorso storico, usato da
   /// [BustaPagaRegexParser.parse] per tutti i campi tranne, quando
   /// disponibili, ratei/voci) più ratei e voci letti per COORDINATE
-  /// (percorso più affidabile quando disponibile, vedi [_paroleprimaPagina]
+  /// (percorso più affidabile quando disponibile, vedi [_paroleDiPagina]
   /// /[classificaRateiDaCoordinate]/[classificaVociDaCoordinate]), estratti
   /// dallo stesso [PdfDocument] in un solo passaggio (un solo parsing del
   /// file, un solo dispose, un'unica lettura delle parole della prima
@@ -155,7 +153,7 @@ class PdfImportService {
     final document = PdfDocument(inputBytes: bytes);
     try {
       final testo = PdfTextExtractor(document).extractText();
-      final parole = _paroleprimaPagina(document);
+      final parole = _paroleDiPagina(document, 0);
       final ratei = parole == null
           ? null
           : classificaRateiDaCoordinate([
@@ -198,12 +196,12 @@ class PdfImportService {
   /// `extractTextLines` che solleva un'eccezione su un layout radicalmente
   /// diverso: è un arricchimento best-effort, [BustaPagaRegexParser.parse]
   /// ricade comunque sul percorso testuale quando questo manca.
-  List<ParolaVoce>? _paroleprimaPagina(PdfDocument document) {
+  List<ParolaVoce>? _paroleDiPagina(PdfDocument document, int indice) {
     try {
-      if (document.pages.count == 0) return null;
+      if (indice >= document.pages.count) return null;
       final lines = PdfTextExtractor(document).extractTextLines(
-        startPageIndex: 0,
-        endPageIndex: 0,
+        startPageIndex: indice,
+        endPageIndex: indice,
       );
 
       return [
@@ -293,7 +291,7 @@ class PdfImportService {
 // dati semplici costruiti a mano — vedi `test/pdf_ratei_coordinate_test.dart`
 // — invece che solo indirettamente tramite un `TextWord` di Syncfusion (che
 // richiederebbe un PDF reale per essere costruito). Il solo punto di contatto
-// con Syncfusion è [PdfImportService._paroleprimaPagina] sopra, che adatta
+// con Syncfusion è [PdfImportService._paroleDiPagina] sopra, che adatta
 // `TextWord` a [ParolaRateo].
 // =============================================================================
 
@@ -457,7 +455,7 @@ enum _ColonnaRateo {
 // Isolata apposta per essere testabile con dati semplici costruiti a mano —
 // vedi `test/pdf_voci_coordinate_test.dart` — invece che solo indirettamente
 // tramite un `TextWord` di Syncfusion. Il solo punto di contatto con
-// Syncfusion è [PdfImportService._paroleprimaPagina] sopra.
+// Syncfusion è [PdfImportService._paroleDiPagina] sopra.
 //
 // Motivazione (vedi anche doc di libreria in testa a
 // `busta_paga_regex_parser.dart`): `PdfTextExtractor.extractText()`
@@ -467,12 +465,6 @@ enum _ColonnaRateo {
 // univoca.
 // =============================================================================
 
-/// Una singola parola della pagina PDF ridotta ai soli dati che servono a
-/// [classificaVociDaCoordinate]: il testo grezzo e le coordinate usate come
-/// ancora per riga/colonna (bordo superiore Y, bordo sinistro X, bordo
-/// destro X) — a differenza di [ParolaRateo] serve anche il bordo sinistro,
-/// necessario per ricostruire testo libero allineato a sinistra (descrizioni
-/// di voci/contributi), non solo colonne numeriche allineate a destra.
 /// Classifica le parole della prima pagina del PDF (ridotte a [ParolaVoce])
 /// nella tabella voci, nella tabella contributi, nella trattenuta IRPEF e
 /// nella riga totali del layout del software payroll "JOB", combinandole in
