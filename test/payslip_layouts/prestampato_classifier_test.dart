@@ -1,3 +1,4 @@
+import 'package:buts/services/payslip_layouts/pdf_contenuto.dart';
 import 'package:buts/services/payslip_layouts/prestampato_classifier.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,10 +31,66 @@ void main() {
 
   test('la pagina dei totali è quella con il valore sotto Totale Competenze',
       () {
-    // Pagina 0 (SEGUE) senza valori NON deve essere scelta: ore lavorate
-    // sono lette da una sola pagina, il totale vale 1.088,01 solo in pagina 1.
-    final r = classificaPrestampato(pagine);
-    expect(r.warnings, isNot(contains('pagina dei totali non trovata')));
+    // Netto e ore lavorate esistono solo in pagina 1 (paginaSegue non ha
+    // valori sotto Totale Competenze): se fosse scelta la pagina SEGUE
+    // sarebbero assenti.
+    for (final ordine in [
+      [paginaSegue(), paginaDati()],
+      [paginaDati(), paginaSegue()],
+    ]) {
+      final r = classificaPrestampato(ordine);
+      expect(r.netto, closeTo(787.99, 0.001));
+      expect(r.oreLavorate, closeTo(160.0, 0.001));
+      expect(r.warnings, isNot(contains('pagina dei totali non trovata')));
+    }
+  });
+
+  group('netto', () {
+    List<ParolaVoce> senzaEtichettaBasso() => [
+          for (final p in paginaDati())
+            if (!(const {'NETTO', 'DA', 'PAGARE'}).contains(p.testo)) p,
+        ];
+    List<ParolaVoce> conAltoDiverso(List<ParolaVoce> parole) => [
+          for (final p in parole)
+            p.testo == '787,99' && p.bordoSuperiore == 215.7
+                ? w('777,77', p.bordoSinistro, p.bordoDestro,
+                    p.bordoSuperiore)
+                : p,
+        ];
+
+    test('in basso: 787,99', () {
+      expect(classificaPrestampato(pagine).netto, closeTo(787.99, 0.001));
+    });
+
+    test('ripiego sul riquadro in alto, senza confondersi col CF', () {
+      final r = classificaPrestampato([conAltoDiverso(senzaEtichettaBasso())]);
+      expect(r.netto, closeTo(777.77, 0.001));
+    });
+
+    test('il netto in basso ha priorità su quello in alto', () {
+      final r = classificaPrestampato([conAltoDiverso(paginaDati())]);
+      expect(r.netto, closeTo(787.99, 0.001));
+    });
+
+    test('senza alcun valore netto: warning e null', () {
+      final p = [
+        for (final x in senzaEtichettaBasso())
+          if (!(x.testo == '787,99' && x.bordoSuperiore == 215.7)) x,
+      ];
+      final r = classificaPrestampato([p]);
+      expect(r.netto, isNull);
+      expect(r.warnings, contains('netto non trovato'));
+    });
+
+    test('senza valore ore lavorate: warning e null', () {
+      final p = [
+        for (final x in paginaDati())
+          if (x.testo != '160,00') x,
+      ];
+      final r = classificaPrestampato([p]);
+      expect(r.oreLavorate, isNull);
+      expect(r.warnings, contains('ore lavorate non determinabili'));
+    });
   });
 
   test('regge anche l\'ordine invertito e la pagina singola', () {
