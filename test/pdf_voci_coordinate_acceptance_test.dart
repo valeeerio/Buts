@@ -43,7 +43,7 @@ void main() {
   const importService = PdfImportService();
 
   // Stessa stringa di `BustaPagaRegexParser.chiaveArrotondamento`
-  // (privata, non importabile): la differenza di arrotondamento ARR.
+  // (pubblica, ma qui ricopiata per tenere il test indipendente): la differenza di arrotondamento ARR.
   // PRECED./ARR. ATTUALE non fa parte del "TOTALE TRATTENUTE" stampato sul
   // PDF (è un aggiustamento separato, sommato solo nel netto derivato), va
   // esclusa dalla somma sotto per confrontarla correttamente con quel

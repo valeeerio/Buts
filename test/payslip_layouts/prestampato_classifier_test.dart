@@ -139,6 +139,7 @@ void main() {
 
     test('Ex festività: etichetta presente e celle vuote -> 0', () {
       final r = classificaPrestampato(pagine);
+      expect(r.warnings.where((s) => s.contains('ex festività')), isEmpty);
       expect(r.exFestivitaMaturate, 0);
       expect(r.exFestivitaGodute, 0);
       expect(r.exFestivitaResidue, 0);
@@ -147,6 +148,38 @@ void main() {
     test('la parola "rateo m.:NN,NN" non è un saldo', () {
       final r = classificaPrestampato(pagine);
       expect(r.ferieMaturate, isNot(closeTo(5.0, 0.001)));
+    });
+
+    List<ParolaVoce> conValore(String da, String a) => [
+          for (final p in paginaDati())
+            p.testo == da
+                ? w(a, p.bordoSinistro, p.bordoDestro, p.bordoSuperiore)
+                : p,
+        ];
+
+    test('identità ratei coerente (Ferie godute vuote): nessun warning', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.warnings.where((s) => s.startsWith('ratei')), isEmpty);
+    });
+
+    test('residuo ROL incoerente -> warning specifico solo per ROL', () {
+      final r = classificaPrestampato([conValore('46,00', '47,00')]);
+      expect(r.warnings.where((s) => s.startsWith('ratei ROL non coerenti')),
+          hasLength(1));
+      expect(r.warnings.where((s) => s.startsWith('ratei ferie')), isEmpty);
+    });
+
+    test('residuo Ferie incoerente -> warning specifico solo per ferie', () {
+      final r = classificaPrestampato([conValore('45,00', '50,00')]);
+      expect(r.warnings.where((s) => s.startsWith('ratei ferie non coerenti')),
+          hasLength(1));
+      expect(r.warnings.where((s) => s.startsWith('ratei ROL')), isEmpty);
+    });
+
+    test('Ferie a.p. modificato -> warning ferie', () {
+      final r = classificaPrestampato([conValore('10,00', '11,00')]);
+      expect(r.warnings.where((s) => s.startsWith('ratei ferie non coerenti')),
+          hasLength(1));
     });
 
     test('etichette assenti -> warning e zeri', () {
@@ -218,6 +251,38 @@ void main() {
       expect(r.lordoVerificato, isFalse);
       expect(r.nettoVerificato, isFalse);
       expect(r.warnings.any((s) => s.contains('lordo calcolato')), isTrue);
+    });
+
+    test('nessuna voce di competenza letta -> warning, lordo null, flag falsi',
+        () {
+      final senzaVoci = [
+        for (final pagina in [paginaSegue(), paginaDati()])
+          [
+            for (final p in pagina)
+              if (p.bordoSuperiore != 351.3) p,
+          ],
+      ];
+      final r = classificaPrestampato(senzaVoci);
+      expect(r.competenze, isEmpty);
+      expect(r.warnings, contains('nessuna voce di competenza trovata'));
+      expect(r.lordo, isNull);
+      expect(r.lordoVerificato, isFalse);
+      expect(r.nettoVerificato, isFalse);
+    });
+
+    test('nessuna trattenuta letta con totale ritenute stampato -> warning',
+        () {
+      final senzaTrattenute = [
+        for (final pagina in [paginaSegue(), paginaDati()])
+          [
+            for (final p in pagina)
+              if (p.bordoSuperiore != 362.6 && p.bordoSuperiore != 373.9) p,
+          ],
+      ];
+      final r = classificaPrestampato(senzaTrattenute);
+      expect(r.warnings, contains('nessuna trattenuta trovata'));
+      expect(r.trattenuteVerificate, isFalse);
+      expect(r.nettoVerificato, isFalse);
     });
 
     test('straordinari: somma ore delle voci "Straordinario…"', () {

@@ -23,6 +23,9 @@ void main() {
       expect(r.lordoVerificato, isTrue, reason: r.warnings.join(' | '));
       expect(r.trattenuteVerificate, isTrue, reason: r.warnings.join(' | '));
       expect(r.nettoVerificato, isTrue, reason: r.warnings.join(' | '));
+      // Nessun warning: include le identità dei ratei (a.p. + spett. − godute
+      // = residue) di Ferie, ROL ed Ex festività.
+      expect(r.warnings, isEmpty, reason: r.warnings.join(' | '));
       expect(r.competenze, isNotEmpty);
       expect(r.ferieResidue, greaterThanOrEqualTo(0));
       expect(r.rolResidui, greaterThanOrEqualTo(0));

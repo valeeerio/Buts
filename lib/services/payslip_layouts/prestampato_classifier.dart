@@ -316,6 +316,23 @@ BustaPagaEstratti classificaPrestampato(List<List<ParolaVoce>?> pagine) {
     if (ferie == null) warnings.add('dati ferie non trovati');
     if (rol == null) warnings.add('dati ROL non trovati');
     if (ex == null) warnings.add('dati ex festività non trovati');
+    // Una cella vuota e una illeggibile sono indistinguibili (nessuna parola):
+    // si controlla l'identità residuo = a.p. + spett. − godute per categoria.
+    void identita(RateoCategoria? r, String nome, String colonne) {
+      if (r == null) return;
+      final atteso = (r.residuoAnnoPrecedente ?? 0) +
+          (r.maturato ?? 0) -
+          (r.goduto ?? 0);
+      if (((r.residuo ?? 0) - atteso).abs() > 0.05) {
+        warnings.add(
+          'ratei $nome non coerenti ($colonne): verifica manualmente',
+        );
+      }
+    }
+
+    identita(ferie, 'ferie', 'a.p. + spett. − godute ≠ residue');
+    identita(rol, 'ROL', 'a.p. + spett. − goduti ≠ residui');
+    identita(ex, 'ex festività', 'a.p. + spett. − godute ≠ residue');
   }
 
   final competenze = <VoceCompetenza>[];
@@ -356,12 +373,20 @@ BustaPagaEstratti classificaPrestampato(List<List<ParolaVoce>?> pagine) {
 
   final lordo = computeLordo(competenze);
   final sommaNominate = trattenute.values.fold(0.0, (s, v) => s + v);
+  final haNominate = trattenute.isNotEmpty;
   final arrotondamento = (arrPrec ?? 0) - (arrAtt ?? 0);
   if (arrotondamento.abs() > 0.005) {
     trattenute[BustaPagaRegexParser.chiaveArrotondamento] = arrotondamento;
   }
   final nettoDerivato =
       competenze.isEmpty ? null : computeNetto(lordo, trattenute);
+
+  if (indice != null && competenze.isEmpty) {
+    warnings.add('nessuna voce di competenza trovata');
+  }
+  if (totaleRitenute != null && !haNominate) {
+    warnings.add('nessuna trattenuta trovata');
+  }
 
   var lordoVerificato = false;
   if (totaleCompetenze != null && competenze.isNotEmpty) {

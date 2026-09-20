@@ -54,6 +54,12 @@ import '../models/busta_paga.dart';
 class BustaPagaEstratti {
   final String? periodo; // formato YYYY-MM
   final double? lordo;
+
+  /// Contratto: la semantica NON è uniforme fra layout. JOB: netto derivato
+  /// (lordo − trattenute). Prestampato: derivato solo se [lordoVerificato] e
+  /// [trattenuteVerificate], altrimenti il netto stampato sul PDF. I
+  /// consumatori non devono leggerlo come dato uniforme: il form ricalcola
+  /// netto = lordo − trattenute.
   final double? netto;
   final Map<String, double> trattenute;
   final double straordinari;
@@ -684,10 +690,10 @@ class BustaPagaRegexParser {
   /// Chiave delle trattenute per la differenza di arrotondamento; condivisa
   /// con i layout.
   ///
-  // Chiave usata nella mappa `trattenute` per modellare esplicitamente la
-  // differenza di arrotondamento ARR. PRECED./ARR. ATTUALE del percorso a
-  // coordinate (vedi `_trattenuteDaCoordinate`) — MAI nascosta in un residuo
-  // generico "Altre trattenute" come nel percorso testuale storico.
+  /// Chiave usata nella mappa `trattenute` per modellare esplicitamente la
+  /// differenza di arrotondamento ARR. PRECED./ARR. ATTUALE del percorso a
+  /// coordinate (vedi `_trattenuteDaCoordinate`) — MAI nascosta in un residuo
+  /// generico "Altre trattenute" come nel percorso testuale storico.
   static const chiaveArrotondamento =
       'Differenza di arrotondamento (mese precedente/attuale)';
 
