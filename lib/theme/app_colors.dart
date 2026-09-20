@@ -75,6 +75,11 @@ class AppColors {
   /// scuro Pulse.
   static const pulseAccent = Color(0xFF9AA7B5);
 
+  /// Ciano dell'anello dell'icona app (campionato dal pixel dell'anello in
+  /// `Icon-App-1024x1024@1x.png`, #3DDBFF). Usato solo dall'animazione di
+  /// avvio; `pulseAccent` è invece un grigio-azzurro, non il ciano del brand.
+  static const brandRing = Color(0xFF3DDBFF);
+
   /// Testo/icone sopra un riempimento pieno di `pulseAccent`. Verificato con
   /// la formula di luminanza relativa WCAG: quasi-nero #0E1420 su #9AA7B5,
   /// 7.52:1 (contro 2.42:1 di un testo chiaro), ampiamente sopra soglia

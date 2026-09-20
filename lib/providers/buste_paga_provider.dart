@@ -19,11 +19,55 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
+/// Legge dal DB tutte le buste paga in modo resiliente a righe singolarmente
+/// corrotte.
+///
+/// Percorso veloce: una singola `select(...).get()`. I converter JSON
+/// (`TrattenuteConverter`/`VoceCompetenzaListConverter` in
+/// `lib/data/database.dart`) sono invocati da Drift dentro la `.map().toList()`
+/// che costruisce l'intera lista, quindi una sola riga con JSON malformato fa
+/// fallire l'intera `Future`. Solo in quel caso si ripiega sulla lettura riga
+/// per riga: prima il solo elenco di id (colonna testuale, senza converter),
+/// poi ogni riga singolarmente, scartando con un log solo quelle corrotte.
+Future<List<BustaPaga>> leggiBusteResilienti(AppDatabase db) async {
+  try {
+    final righe = await db.select(db.bustePagaTable).get();
+    return righe.map((r) => r.toDomain()).toList();
+  } catch (e) {
+    // Almeno una riga corrotta: fallback riga per riga sotto.
+    debugPrint('Lettura veloce buste paga fallita, ripiego riga per riga: $e');
+  }
+  final idRows = await (db.selectOnly(db.bustePagaTable)
+        ..addColumns([db.bustePagaTable.id]))
+      .get();
+  final ids = idRows.map((r) => r.read(db.bustePagaTable.id)!).toList();
+
+  final daDb = <BustaPaga>[];
+  for (final id in ids) {
+    try {
+      final riga = await (db.select(db.bustePagaTable)
+            ..where((t) => t.id.equals(id)))
+          .getSingle();
+      daDb.add(riga.toDomain());
+    } catch (e) {
+      debugPrint('Busta paga (id=$id) scartata perché corrotta: $e');
+    }
+  }
+  return daDb;
+}
+
+/// Buste paga già lette dal DB prima di `runApp` (vedi `main()`). `null` di
+/// default: il notifier ricade sul caricamento lazy.
+final busteInizialiProvider = Provider<List<BustaPaga>?>((ref) => null);
+
 /// Archivio buste paga persistito su Drift (SQLite), esposto alla UI come
 /// `List<BustaPaga>` sincrono.
 ///
-/// Pattern scelto: `StateNotifier<List<BustaPaga>>` che si inizializza
-/// leggendo tutte le righe dal DB in modo asincrono (`_loadFromDb`), poi ogni
+/// Pattern scelto: `StateNotifier<List<BustaPaga>>` che si inizializza in uno
+/// di due modi: (a) con `iniziali` già lette da `main()` prima di `runApp`
+/// (percorso veloce: stato popolato dal primo frame, nessuna SELECT), oppure
+/// (b) leggendo tutte le righe dal DB in modo asincrono (`_initialize`,
+/// percorso lazy usato quando `iniziali` è `null`). Poi ogni
 /// scrittura (`add`/`update`) aggiorna prima lo stato locale in memoria
 /// (percepito come sincrono dalla UI esistente, che non deve cambiare) e in
 /// parallelo persiste su Drift. Alternativa scartata: `StreamProvider` con
@@ -35,15 +79,36 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 /// `.notifier.add/update`) che il task richiede esplicitamente di non
 /// toccare.
 class BustePagaNotifier extends StateNotifier<List<BustaPaga>> {
-  BustePagaNotifier(this._db, this._pdfImportService) : super(const []) {
-    _initialize();
+  /// Se [iniziali] è non-null (precaricamento in `main()` prima di `runApp`),
+  /// lo stato parte già popolato e [caricamentoCompletato] è `true` dal primo
+  /// frame: nessuna SELECT iniziale, nessun intervallo "in caricamento". Se è
+  /// `null` si usa il comportamento lazy (SELECT asincrona in [_initialize]).
+  BustePagaNotifier(
+    this._db,
+    this._pdfImportService, {
+    List<BustaPaga>? iniziali,
+    Future<Directory> Function()? documentsDirectory,
+  })  : _documentsDirectory =
+            documentsDirectory ?? getApplicationDocumentsDirectory,
+        super(iniziali ?? const []) {
+    if (iniziali != null) {
+      _caricamentoCompletato = true;
+      // Fire-and-forget: non ritarda l'avvio (vedi [_sweepPdfOrfani]).
+      _sweepPdfOrfani();
+    } else {
+      _initialize();
+    }
   }
 
   final AppDatabase _db;
   final PdfImportService _pdfImportService;
 
-  /// `true` solo dopo che la SELECT iniziale di [_initialize] ha popolato
-  /// [state] con i dati reali dal DB. Finché è `false`, uno `state` vuoto è
+  /// Sorgente della directory documenti; iniettabile per i test dello sweep.
+  final Future<Directory> Function() _documentsDirectory;
+
+  /// `true` quando [state] contiene i dati reali dal DB: o dal primo frame
+  /// (percorso con `iniziali` precaricate da `main()`), oppure dopo che la
+  /// SELECT iniziale di [_initialize] (percorso lazy) lo ha popolato. Finché è `false`, uno `state` vuoto è
   /// indistinguibile da "l'utente non ha ancora nessuna busta paga" —
   /// la UI (`buste_paga_archivio_view.dart`) usa questo flag (esposto anche
   /// tramite [busteCaricamentoCompletatoProvider]) per non mostrare lo stato
@@ -100,44 +165,7 @@ class BustePagaNotifier extends StateNotifier<List<BustaPaga>> {
     _sweepPdfOrfani();
   }
 
-  /// Legge dal DB tutte le buste paga, riga per riga, in modo resiliente a
-  /// righe singolarmente corrotte.
-  ///
-  /// `_db.select(_db.bustePagaTable).get()` non basta: i converter JSON
-  /// (`TrattenuteConverter`/`VoceCompetenzaListConverter` in
-  /// `lib/data/database.dart`) vengono invocati da Drift internamente,
-  /// dentro la stessa `.map().toList()` sincrona che costruisce l'intera
-  /// lista di righe — se anche una sola riga ha JSON malformato in
-  /// `trattenute`/`competenze`, l'intera `Future` di `.get()` fallisce prima
-  /// di restituire qualunque riga, non solo quella incriminata. Per isolare
-  /// il fallimento riga per riga si legge prima il solo elenco di id (colonna
-  /// di solo testo, non passa per nessun converter JSON, non può fallire per
-  /// questo motivo), poi si rilegge — e converte in `BustaPaga` — ogni riga
-  /// singolarmente, scartando con un log solo quelle che falliscono: un
-  /// singolo record corrotto non deve mai rendere invisibile tutto il resto
-  /// dell'archivio.
-  Future<List<BustaPaga>> _leggiRigheResilienti() async {
-    final idRows = await (_db.selectOnly(_db.bustePagaTable)
-          ..addColumns([_db.bustePagaTable.id]))
-        .get();
-    final ids = idRows.map((r) => r.read(_db.bustePagaTable.id)!).toList();
-
-    final daDb = <BustaPaga>[];
-    for (final id in ids) {
-      try {
-        final riga = await (_db.select(_db.bustePagaTable)
-              ..where((t) => t.id.equals(id)))
-            .getSingle();
-        daDb.add(riga.toDomain());
-      } catch (e) {
-        // Riga corrotta (es. JSON malformato in `trattenute`/`competenze`):
-        // scartata singolarmente, non deve far fallire il caricamento
-        // dell'intero archivio.
-        debugPrint('Busta paga (id=$id) scartata perché corrotta: $e');
-      }
-    }
-    return daDb;
-  }
+  Future<List<BustaPaga>> _leggiRigheResilienti() => leggiBusteResilienti(_db);
 
   /// Elimina dalla cartella `buste_paga_pdf/` i PDF non referenziati da
   /// nessuna busta paga in archivio: orfani lasciati da import interrotti a
@@ -179,11 +207,29 @@ class BustePagaNotifier extends StateNotifier<List<BustaPaga>> {
   /// vecchi path assoluti salvati prima del fix di
   /// `pdf_path_resolver.dart` (prefisso container sandbox iOS, invalidato a
   /// ogni reinstallazione ma con lo stesso basename).
+  ///
+  /// Sono considerati referenziati anche i `fileOrigine` di TUTTE le righe nel
+  /// DB, incluse quelle corrotte scartate da [leggiBusteResilienti] (assenti
+  /// da [state] ma ancora presenti su disco): letti con una `selectOnly` sulla
+  /// sola colonna testuale, senza converter JSON, quindi non può fallire per
+  /// JSON malformato.
+  @visibleForTesting
+  Future<void> sweepPdfOrfani() => _sweepPdfOrfani();
+
   Future<void> _sweepPdfOrfani() async {
     try {
       if (state.isEmpty) return;
 
-      final documentsDir = await getApplicationDocumentsDirectory();
+      final colFile = _db.bustePagaTable.fileOrigine;
+      final fileRows = await (_db.selectOnly(_db.bustePagaTable)
+            ..addColumns([colFile]))
+          .get();
+      final nomiInDb = {
+        for (final r in fileRows)
+          if (r.read(colFile) case final f? when f.isNotEmpty) p.basename(f),
+      };
+
+      final documentsDir = await _documentsDirectory();
       final pdfDir = Directory(p.join(documentsDir.path, pdfBusteDirName));
       if (!await pdfDir.exists()) return;
 
@@ -191,6 +237,7 @@ class BustePagaNotifier extends StateNotifier<List<BustaPaga>> {
       for (final entry in entries) {
         if (entry is! File) continue;
         final nomeFile = p.basename(entry.path);
+        if (nomiInDb.contains(nomeFile)) continue;
         // Ri-verificato sullo stato CORRENTE ad ogni iterazione, non su uno
         // snapshot preso prima del loop: vedi doc del metodo.
         final referenziatoOra = state.any((b) {
@@ -286,6 +333,7 @@ final busteRepositoryProvider =
   (ref) => BustePagaNotifier(
     ref.watch(databaseProvider),
     const PdfImportService(),
+    iniziali: ref.read(busteInizialiProvider),
   ),
 );
 

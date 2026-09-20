@@ -392,7 +392,7 @@ class _ChartCardState extends State<_ChartCard> {
                           turns: _expanded ? 0.5 : 0,
                           child: PulseIcon(
                             glyph: PulseIconGlyph.chevronDown,
-                            size: 12,
+                            size: 14,
                             color: accent,
                           ),
                         ),

@@ -8,7 +8,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await initializeDateFormatting('it_IT');
-    await tester.pumpWidget(const ButsApp());
+    await tester.pumpWidget(const ButsApp(mostraAnimazioneAvvio: false));
     await tester.pumpAndSettle();
 
     expect(find.byType(ButsApp), findsOneWidget);
