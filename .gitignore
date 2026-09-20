@@ -35,3 +35,7 @@ ios/Runner.xcworkspace/xcshareddata/swiftpm/
 # si rigenerano da soli se in futuro serve supporto Android)
 android/local.properties
 android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
+# Worktree git locali di Claude Code: mai tracciarli (verrebbero registrati come
+# puntatore a commit senza .gitmodules, che il remoto non puo risolvere).
+.claude/worktrees/
