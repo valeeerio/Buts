@@ -112,8 +112,11 @@ fixture sintetiche verificano la logica, non la stabilità del modulo.
       sul secondo PDF
 - [ ] Il ROL goduti cumulato dei ratei non coincide con le ore della voce
       ROL GODUTI del mese; da chiarire con l'utente
-- [ ] 13ª/14ª e cedolino a pagina singola: il classificatore restituisce
-      sempre tipo `mensile`
+- [ ] 13ª/14ª e cedolino a pagina singola: oggi il classificatore
+      restituisce SEMPRE tipo `mensile`, quindi una 13ª/14ª di questo layout
+      verrebbe bloccata dal controllo anti-duplicati come "mensile già
+      presente" (import legittimo bloccato) finché non c'è un cedolino di
+      esempio per rilevarla dalla tipologia
 - [ ] Chiavi trattenute normalizzate (`CTR FPLD` → `INPS`, `IRPEF NETTA` →
       `IRPEF`): confermare guardando l'archivio
 - [ ] Minor differiti della revisione: righe oltre 80 colonne, test di

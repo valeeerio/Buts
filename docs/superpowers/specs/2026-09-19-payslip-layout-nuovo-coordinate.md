@@ -1,6 +1,6 @@
 # Nuovo layout cedolino: ancore e coordinate (Task 4, scoperta)
 
-Findings ricavati leggendo un cedolino di esempio (luglio 2026, 2 pagine) con
+Findings ricavati leggendo un cedolino di esempio (mese di esempio, 2 pagine) con
 Syncfusion tramite `PdfImportService.leggiContenuto`, lo stesso motore
 dell'app. Nessun dato personale ne' sanitario: solo etichette generiche del
 modulo, intervalli X/Y, strutture e formati dei numeri; i valori numerici
@@ -115,7 +115,7 @@ quindi sono tenute per stabili (da confermare, vedi punto 5).
 
 ### Periodo
 - Etichetta: `Periodo` `di` `retribuzione` X 453,0-515,5, Y ~127,6.
-- Valore: **una sola parola** `LUG.2026` (formato `MMM.AAAA`, mese di 3
+- Valore: **una sola parola** `MMM.AAAA` (formato `MMM.AAAA`, mese di 3
   lettere maiuscole abbreviato, punto, anno a 4 cifre) X 486,7-523,3, Y
   ~136,9 (etichetta + 9,3). Non sotto l'etichetta: allineato piu' a
   destra, ma su un solo candidato nella zona (prima parola con regex
@@ -314,7 +314,7 @@ nel layout JOB); tutto il resto e' informativo.
    osservata con un valore.
 4. **ROL goduti nella tabella ratei**: il valore nel rateo "ROL goduti"
    (cumulato annuo) differisce dalle ore della voce "ROL GODUTI" del mese
-   (somma delle ore delle due pagine, 22 ore in totale). Il significato esatto
+   (le ore della voce del mese). Il significato esatto
    del valore nel rateo va chiarito con l'utente. L'identita'
    a.p. + spett. - goduti = residui regge comunque aritmeticamente.
 5. **Permessi**: il layout JOB ha "Permessi riduz. orario goduti" mensile; nel

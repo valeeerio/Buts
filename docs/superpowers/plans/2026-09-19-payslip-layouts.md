@@ -658,7 +658,7 @@ contenere, con etichette e intervalli X/Y ma **mai** nome, CF, azienda, indirizz
    verificate assenti nel testo JOB (`_testoSintetico`).
 2. **Selezione pagina**: quale pagina contiene "Totale Competenze" e i ratei, e
    come riconoscerla per contenuto.
-3. **Ancora per ogni campo**: periodo (come compare il token `LUG.2026` nelle
+3. **Ancora per ogni campo**: periodo (come compare il token `MMM.AAAA` nelle
    parole), netto, totale competenze, totale ritenute, ore lavorate, righe
    Ferie/ROL (a.p., spett., godute, residuo), voci di competenza, trattenute
    (IRPEF, addizionali, contributi) — per ciascuno: etichetta, colonna (X

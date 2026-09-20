@@ -23,11 +23,11 @@ modifiche a form/dettaglio/statistiche (il contratto di uscita non cambia).
   estrazione/import più una colonna DB.
 - `TipoBustaPaga` (mensile/13a/14a) resta ortogonale al layout.
 
-## Il nuovo layout (da PDF di esempio, luglio 2026)
+## Il nuovo layout (da PDF di esempio, mese di esempio)
 
 - Nessuna marca "JOB"; intestazioni "ELEMENTI DELLA RETRIBUZIONE", "Periodo di
   retribuzione".
-- Periodo in formato abbreviato `LUG.2026` (il parser JOB cerca i mesi per
+- Periodo in formato abbreviato `MMM.AAAA` (il parser JOB cerca i mesi per
   esteso).
 - Il testo linearizzato separa etichette e valori in colonne: l'estrazione
   testuale non basta, serve l'estrazione per **coordinate** delle parole.
