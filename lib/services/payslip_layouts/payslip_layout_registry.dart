@@ -2,6 +2,7 @@ import '../busta_paga_regex_parser.dart';
 import 'job_layout.dart';
 import 'payslip_layout.dart';
 import 'pdf_contenuto.dart';
+import 'prestampato_layout.dart';
 
 class PayslipLayoutRegistry {
   final List<PayslipLayout> layouts;
@@ -9,7 +10,8 @@ class PayslipLayoutRegistry {
   const PayslipLayoutRegistry(this.layouts);
 
   /// Layout supportati, in ordine di prova. I nuovi layout si aggiungono qui.
-  static const standard = PayslipLayoutRegistry([JobLayout()]);
+  static const standard =
+      PayslipLayoutRegistry([JobLayout(), PrestampatoLayout()]);
 
   /// Primo layout che riconosce il PDF, o `null` se nessuno lo riconosce.
   PayslipLayout? rileva(PdfContenuto contenuto) {
