@@ -1183,7 +1183,7 @@ sovrascriverla.
 Aggiungere voci aperte: (1) secondo PDF del layout `prestampato` (con Ex festività,
 Ferie godute, 13ª/14ª) per confermare le ancore; (2) nome definitivo del layout
 (oggi id provvisorio `prestampato`); (3) significato del "ROL goduti" del rateo
-(106,00-tipo vs ore della voce mensile); (4) 13ª/14ª e cedolino a pagina singola
+(cumulato annuo dei ratei vs ore della voce mensile); (4) 13ª/14ª e cedolino a pagina singola
 per il nuovo layout; (5) minor differiti della revisione (righe >80 colonne, test
 di `_paroleDiPagina` su pagina illeggibile, copertura v6→v7 diretta).
 
