@@ -110,8 +110,8 @@ fixture sintetiche verificano la logica, non la stabilità del modulo.
       prestampato: rischio di falsi positivi con altri software paghe;
       aggiungere "Netto da pagare" o un'etichetta più specifica verificandola
       sul secondo PDF
-- [ ] Significato del "ROL goduti" del rateo (valore cumulativo tipo 106,00 vs
-      ore della voce mensile)
+- [ ] Il ROL goduti cumulato dei ratei non coincide con le ore della voce
+      ROL GODUTI del mese; da chiarire con l'utente
 - [ ] 13ª/14ª e cedolino a pagina singola: il classificatore restituisce
       sempre tipo `mensile`
 - [ ] Chiavi trattenute normalizzate (`CTR FPLD` → `INPS`, `IRPEF NETTA` →

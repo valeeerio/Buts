@@ -45,9 +45,10 @@ mensili, stesso anno+tipo per 13a/14a) gira **due volte**: subito dopo la
 selezione del file (prima ancora di aprire il form, così l'alert "busta paga
 già presente" appare appena l'utente sceglie il PDF dall'archivio del
 telefono) e di nuovo al salvataggio del form, come rete di sicurezza. Se il
-file non ha testo estraibile, o il parser regex
-(`lib/services/busta_paga_regex_parser.dart`, mirato al layout del software paghe
-"JOB") non riconosce i dati principali (netto e periodo entrambi assenti), viene
+file non ha testo estraibile (alert "PDF non supportato"), oppure nessun
+layout registrato lo riconosce (`PayslipLayoutRegistry.standard.estrai(...)`
+restituisce null) o il layout riconosciuto non estrae né netto né periodo
+(alert "Formato non riconosciuto", il file copiato viene cancellato), viene
 mostrato un alert bloccante e **il form non si apre** — non esiste più un modo di
 aprire il form vuoto per un inserimento libero da zero. Il form
 (`busta_paga_form_screen.dart`) si apre **solo** per l'import: precompilato dai
@@ -60,9 +61,9 @@ swipe-to-delete, barra flottante Salva/Annulla in basso — non più 7
 `GlassFormSection` separate con `CupertinoFormRow`/tasto Salva in nav bar.
 Non esiste più una modalità "existing"/di modifica di una busta paga già
 salvata (rimossa il 2026-07-31): la modifica avviene interamente nel
-dettaglio, vedi sotto. Estrazione automatica via AI locale on-device resta
-una fase futura (vedi sotto), oggi la precompilazione è solo tramite parser
-regex.
+dettaglio, vedi sotto. Estrazione automatica via AI locale on-device è stata
+abbandonata (vedi sotto): oggi la precompilazione avviene solo tramite i
+layout PDF (vedi "Layout PDF pluggabili").
 
 **Layout PDF pluggabili (2026-09-20)**: l'import non è più legato al solo
 layout JOB. `PdfImportService.leggiContenuto(bytes)` legge il PDF una volta
@@ -291,9 +292,10 @@ per le voci aperte verso il rilascio.
 
 **Nota**: l'estrazione dati via AI locale on-device (`llama_cpp_dart`), valutata
 in una fase precedente, è stata **abbandonata (2026-07-30)** — vedi "Decisioni
-archiviate" in `BACKLOG.md`. Il parser regex
-(`lib/services/busta_paga_regex_parser.dart`) resta l'unico meccanismo di
-precompilazione dati da PDF, nessun piano di sostituirlo.
+archiviate" in `BACKLOG.md`. La precompilazione dati da PDF avviene
+tramite i layout di `PayslipLayoutRegistry.standard`: JOB (parser regex
+`lib/services/busta_paga_regex_parser.dart` più funzioni a coordinate) e
+prestampato (lettura per coordinate); nessun piano di sostituirli con AI.
 
 ## Convenzioni di codice
 
