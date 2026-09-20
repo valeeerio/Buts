@@ -64,6 +64,24 @@ dettaglio, vedi sotto. Estrazione automatica via AI locale on-device resta
 una fase futura (vedi sotto), oggi la precompilazione è solo tramite parser
 regex.
 
+**Layout PDF pluggabili (2026-09-20)**: l'import non è più legato al solo
+layout JOB. `PdfImportService.leggiContenuto(bytes)` legge il PDF una volta
+sola in un `PdfContenuto` (testo + parole con coordinate per pagina);
+`PayslipLayoutRegistry.standard` (`lib/services/payslip_layouts/`, lista
+`[JobLayout(), PrestampatoLayout()]`) sceglie il layout con la firma testuale
+(`JobLayout` = "JOB - Copyright", adattatore sul parser regex esistente;
+`PrestampatoLayout` = etichette "ELEMENTI DELLA RETRIBUZIONE" + "Periodo di
+retribuzione", lettura per coordinate con `classificaPrestampato` in
+`prestampato_classifier.dart`, ancore relative all'etichetta e colonne a
+bordo destro), estrae i dati e stampa `layoutId` sul risultato; la busta
+salva `layout` (colonna Drift, `schemaVersion` 7, migrazione additiva,
+default `'job'`, costante `kLayoutPredefinito`). Se nessun layout riconosce
+il PDF: alert "Formato non riconosciuto" come prima. L'id `prestampato` è
+provvisorio. **Regola per aggiungere un nuovo layout: una classe
+`PayslipLayout` + una riga in `PayslipLayoutRegistry.standard` + test con
+fixture sintetiche (mai PDF reali nel repo — l'eventuale accettazione su PDF
+reale resta fuori dal repo, saltata senza `--dart-define`).**
+
 **Dettaglio busta paga** (`busta_paga_detail_screen.dart`,
 `ConsumerStatefulWidget` — non più `ConsumerWidget`, serve stato locale per la
 modalità modifica): hero card in cima (mese, badge di stato Confermato/Da

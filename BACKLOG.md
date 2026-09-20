@@ -93,6 +93,33 @@ merge in `main` via Pull Request (vedi commit su
   artefatti Android auto-generati finiti in un commit per errore (l'app è
   iOS-primaria, nessun target Android attivo) — vedi `.gitignore`.
 
+## Layout PDF "prestampato" (2026-09-20) — punti aperti
+
+Il secondo layout è tarato su un solo PDF di esempio (fuori dal repo); le
+fixture sintetiche verificano la logica, non la stabilità del modulo.
+
+- [ ] Secondo PDF del layout prestampato (con Ex festività, Ferie godute,
+      13ª/14ª) per confermare le ancore; oggi le colonne Ex festività sono
+      ipotizzate uguali a Ferie e Ex festività/Ferie godute non sono osservate
+      su PDF reali
+- [ ] L'accettazione sul PDF reale (`test/prestampato_acceptance_test.dart`)
+      asserisce solo identità e ferie/ROL >= 0: rafforzare col secondo PDF
+- [ ] Nome definitivo del layout (oggi id provvisorio `prestampato`; cambiarlo
+      dopo il rilascio richiede una migrazione dei valori `layout` salvati)
+- [ ] Firma del layout prestampato basata su etichette generiche di un modulo
+      prestampato: rischio di falsi positivi con altri software paghe;
+      aggiungere "Netto da pagare" o un'etichetta più specifica verificandola
+      sul secondo PDF
+- [ ] Significato del "ROL goduti" del rateo (valore cumulativo tipo 106,00 vs
+      ore della voce mensile)
+- [ ] 13ª/14ª e cedolino a pagina singola: il classificatore restituisce
+      sempre tipo `mensile`
+- [ ] Chiavi trattenute normalizzate (`CTR FPLD` → `INPS`, `IRPEF NETTA` →
+      `IRPEF`): confermare guardando l'archivio
+- [ ] Minor differiti della revisione: righe oltre 80 colonne, test di
+      `_paroleDiPagina` su pagina illeggibile, copertura diretta della
+      migrazione Drift v6→v7
+
 ## Rilascio (obiettivo sessione 2026-08-09, ancora valido)
 
 - [x] Merge del branch `redesign-schema-busta-paga` in `main` (voci di
