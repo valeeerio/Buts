@@ -5,6 +5,7 @@ import 'pdf_contenuto.dart';
 // Ancore X (bordo destro) delle colonne, da
 // docs/superpowers/specs/2026-09-19-payslip-layout-nuovo-coordinate.md.
 const _xCompetenzeDestro = 561.4;
+const _xRitenuteDestro = 473.3;
 const _tolleranzaX = 4.0;
 
 // Bordi destri delle 4 colonne dei ratei (a.p., spett., godute, residue), da
@@ -154,6 +155,96 @@ String? _periodoDa(List<List<ParolaVoce>?> pagine) {
   return null;
 }
 
+const _xCodiceDestro = 95.0; // colonna Codice: bordo destro ~84-93
+const _xCodiceSinistroMin = 80.0;
+const _xQuantitaDestro = 324.4;
+const _xDescrizioneMin = 100.0;
+const _xDescrizioneMaxCompetenza = 296.0;
+// Le trattenute hanno annotazioni "Anno AAAA Cod.ENTE" da X ~243: la
+// descrizione di una trattenuta si legge solo a sinistra di questo limite.
+const _xDescrizioneMaxTrattenuta = 240.0;
+
+final _codice = RegExp(r'^\d{1,3}$');
+
+typedef _Riga = List<ParolaVoce>;
+
+/// Raggruppa le parole per riga (Y entro 1,0 pt dalla prima della riga).
+List<_Riga> _righe(List<ParolaVoce> parole) {
+  final ordinate = [...parole]
+    ..sort((a, b) => a.bordoSuperiore.compareTo(b.bordoSuperiore));
+  final righe = <_Riga>[];
+  for (final p in ordinate) {
+    if (righe.isNotEmpty &&
+        (p.bordoSuperiore - righe.last.first.bordoSuperiore).abs() <= 1.0) {
+      righe.last.add(p);
+    } else {
+      righe.add([p]);
+    }
+  }
+  for (final r in righe) {
+    r.sort((a, b) => a.bordoSinistro.compareTo(b.bordoSinistro));
+  }
+  return righe;
+}
+
+String _descrizione(_Riga riga, double xMax) => [
+      for (final p in riga)
+        if (p.bordoSinistro >= _xDescrizioneMin && p.bordoDestro <= xMax) p.testo,
+    ].join(' ').trim();
+
+double? _importoInColonna(_Riga riga, double bordoDestro) {
+  for (final p in riga) {
+    if ((p.bordoDestro - bordoDestro).abs() > _tolleranzaX) continue;
+    final v = _num(p.testo);
+    if (v != null) return v;
+  }
+  return null;
+}
+
+/// Voci di competenza (con codice e importo in colonna competenze) e
+/// trattenute (senza codice, importo in colonna ritenute) di UNA pagina, nella
+/// zona fra la testata e la riga di etichette "Arrot. precedente".
+({List<VoceCompetenza> voci, Map<String, double> trattenute}) _vociDiPagina(
+  List<ParolaVoce> parole,
+) {
+  final voci = <VoceCompetenza>[];
+  final trattenute = <String, double>{};
+  final testata = _etichetta(parole, ['COD.']);
+  final fine = _etichetta(parole, ['Arrot.', 'precedente']);
+  if (testata == null || fine == null) return (voci: voci, trattenute: trattenute);
+
+  final zona = [
+    for (final p in parole)
+      if (p.bordoSuperiore >= testata.top + 10 && p.bordoSuperiore < fine.top - 1)
+        p,
+  ];
+  for (final riga in _righe(zona)) {
+    final haCodice = riga.any((p) =>
+        p.bordoSinistro >= _xCodiceSinistroMin &&
+        p.bordoDestro <= _xCodiceDestro &&
+        _codice.hasMatch(p.testo));
+    final importoComp = _importoInColonna(riga, _xCompetenzeDestro);
+    final importoRit = _importoInColonna(riga, _xRitenuteDestro);
+    if (haCodice && importoComp != null) {
+      voci.add(VoceCompetenza(
+        descrizione: _descrizione(riga, _xDescrizioneMaxCompetenza),
+        quantita: _importoInColonna(riga, _xQuantitaDestro),
+        importo: importoComp,
+      ));
+    } else if (!haCodice && importoRit != null) {
+      final d = _descrizione(riga, _xDescrizioneMaxTrattenuta);
+      if (d.isEmpty) continue;
+      final chiave = switch (d) {
+        'CTR FPLD' => 'INPS',
+        'IRPEF NETTA' => 'IRPEF',
+        _ => d,
+      };
+      trattenute[chiave] = (trattenute[chiave] ?? 0) + importoRit;
+    }
+  }
+  return (voci: voci, trattenute: trattenute);
+}
+
 /// Converte le parole con coordinate di un cedolino del layout "prestampato"
 /// in [BustaPagaEstratti]. Puro: nessuna dipendenza da Syncfusion. Tutte le
 /// ancore sono relative all'etichetta della stessa pagina.
@@ -227,11 +318,101 @@ BustaPagaEstratti classificaPrestampato(List<List<ParolaVoce>?> pagine) {
     if (ex == null) warnings.add('dati ex festività non trovati');
   }
 
+  final competenze = <VoceCompetenza>[];
+  final trattenute = <String, double>{};
+  for (final grezza in pagine) {
+    if (grezza == null) continue;
+    final letto = _vociDiPagina(_pulite(grezza));
+    competenze.addAll(letto.voci);
+    letto.trattenute.forEach(
+      (k, v) => trattenute[k] = (trattenute[k] ?? 0) + v,
+    );
+  }
+
+  // Totali stampati e arrotondamenti (solo pagina dei totali).
+  double? totaleRitenute, totaleCompetenze, arrPrec, arrAtt;
+  if (parole.isNotEmpty) {
+    final tr = _etichetta(parole, ['Totale', 'ritenute']);
+    if (tr != null) {
+      totaleRitenute = _valore(parole,
+          dalTop: tr.top + 5, alTop: tr.top + 14, bordoDestro: _xRitenuteDestro);
+    }
+    final tc = _etichetta(parole, ['Totale', 'Competenze']);
+    if (tc != null) {
+      totaleCompetenze = _valore(parole,
+          dalTop: tc.top + 5, alTop: tc.top + 14, bordoDestro: _xCompetenzeDestro);
+    }
+    final ap = _etichetta(parole, ['Arrot.', 'precedente']);
+    if (ap != null) {
+      arrPrec = _valore(parole,
+          dalTop: ap.top + 5, alTop: ap.top + 14, bordoDestro: _xRitenuteDestro);
+    }
+    final aa = _etichetta(parole, ['Arrot.', 'attuale']);
+    if (aa != null) {
+      arrAtt = _valore(parole,
+          dalTop: aa.top + 5, alTop: aa.top + 14, bordoDestro: _xCompetenzeDestro);
+    }
+  }
+
+  final lordo = computeLordo(competenze);
+  final sommaNominate = trattenute.values.fold(0.0, (s, v) => s + v);
+  final arrotondamento = (arrPrec ?? 0) - (arrAtt ?? 0);
+  if (arrotondamento.abs() > 0.005) {
+    trattenute[BustaPagaRegexParser.chiaveArrotondamento] = arrotondamento;
+  }
+  final nettoDerivato =
+      competenze.isEmpty ? null : computeNetto(lordo, trattenute);
+
+  var lordoVerificato = false;
+  if (totaleCompetenze != null && competenze.isNotEmpty) {
+    lordoVerificato = (totaleCompetenze - (lordo + (arrAtt ?? 0))).abs() <= 0.05;
+    if (!lordoVerificato) {
+      warnings.add(
+        'lordo calcolato (€${lordo.toStringAsFixed(2)}) diverge dal '
+        'totale competenze stampato sul PDF '
+        '(€${totaleCompetenze.toStringAsFixed(2)}): verifica manualmente',
+      );
+    }
+  }
+  var trattenuteVerificate = false;
+  if (totaleRitenute != null && trattenute.isNotEmpty) {
+    trattenuteVerificate =
+        (totaleRitenute - (sommaNominate + (arrPrec ?? 0))).abs() <= 0.05;
+    if (!trattenuteVerificate) {
+      warnings.add(
+        'somma trattenute (€${sommaNominate.toStringAsFixed(2)}) diverge dal '
+        'totale ritenute stampato sul PDF '
+        '(€${totaleRitenute.toStringAsFixed(2)}): verifica manualmente',
+      );
+    }
+  }
+  var nettoVerificato = false;
+  if (nettoDerivato != null && nettoStampato != null) {
+    final coerente = (nettoDerivato - nettoStampato).abs() <= 0.05;
+    if (!coerente) {
+      warnings.add(
+        'netto calcolato (€${nettoDerivato.toStringAsFixed(2)}) diverge dal '
+        'netto in busta stampato sul PDF '
+        '(€${nettoStampato.toStringAsFixed(2)}): verifica manualmente',
+      );
+    }
+    nettoVerificato = lordoVerificato && trattenuteVerificate && coerente;
+  }
+
   return BustaPagaEstratti(
     periodo: periodo,
-    netto: nettoStampato,
-    trattenute: const {},
-    straordinari: 0,
+    lordo: competenze.isNotEmpty ? lordo : null,
+    // Il netto derivato si usa solo se lordo e trattenute tornano coi totali
+    // stampati; altrimenti (pagine mancanti/parziali) vale quello stampato.
+    netto: (lordoVerificato && trattenuteVerificate)
+        ? nettoDerivato
+        : nettoStampato,
+    trattenute: trattenute,
+    straordinari: computeStraordinari(competenze),
+    competenze: competenze,
+    lordoVerificato: lordoVerificato,
+    trattenuteVerificate: trattenuteVerificate,
+    nettoVerificato: nettoVerificato,
     ferieMaturate: ferie?.maturato ?? 0,
     ferieGodute: ferie?.goduto ?? 0,
     ferieResidue: ferie?.residuo ?? 0,

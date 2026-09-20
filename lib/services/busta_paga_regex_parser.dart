@@ -681,11 +681,14 @@ class BustaPagaRegexParser {
     return (maturato: maturato, goduto: goduto, residuo: residuo);
   }
 
+  /// Chiave delle trattenute per la differenza di arrotondamento; condivisa
+  /// con i layout.
+  ///
   // Chiave usata nella mappa `trattenute` per modellare esplicitamente la
   // differenza di arrotondamento ARR. PRECED./ARR. ATTUALE del percorso a
   // coordinate (vedi `_trattenuteDaCoordinate`) — MAI nascosta in un residuo
   // generico "Altre trattenute" come nel percorso testuale storico.
-  static const _chiaveArrotondamento =
+  static const chiaveArrotondamento =
       'Differenza di arrotondamento (mese precedente/attuale)';
 
   // Competenze lette per coordinate: solo le righe in colonna COMPETENZE con
@@ -736,11 +739,11 @@ class BustaPagaRegexParser {
     final totali = voci.totali!;
     final arrotondamento = totali.arrPreced - totali.arrAttuale;
     if (arrotondamento.abs() > 0.005) {
-      trattenute[_chiaveArrotondamento] = arrotondamento;
+      trattenute[chiaveArrotondamento] = arrotondamento;
     }
 
     final sommaTrattenuteNominate = trattenute.entries
-        .where((e) => e.key != _chiaveArrotondamento)
+        .where((e) => e.key != chiaveArrotondamento)
         .fold(0.0, (somma, e) => somma + e.value);
     if ((sommaTrattenuteNominate - totali.totaleTrattenute).abs() > 0.05) {
       warnings.add(

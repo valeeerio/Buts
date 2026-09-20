@@ -113,7 +113,7 @@ class TrattenutaEditRow {
   /// del dipendente, vedi `trattenutaPrefix`. Caso raro e MAI digitato
   /// direttamente dall'utente: nasce dalla riga ARR. PRECED./ARR. ATTUALE
   /// del cedolino, calcolata dal parser (vedi `_trattenuteDaCoordinate`/
-  /// `_chiaveArrotondamento` in `busta_paga_regex_parser.dart`).
+  /// `chiaveArrotondamento` in `busta_paga_regex_parser.dart`).
   ///
   /// Il controller [importo] mostra e fa digitare SEMPRE e SOLO il valore
   /// ASSOLUTO — esattamente come la vista di sola lettura (`formatTrattenuta`,

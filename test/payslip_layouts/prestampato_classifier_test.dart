@@ -1,3 +1,4 @@
+import 'package:buts/services/busta_paga_regex_parser.dart';
 import 'package:buts/services/payslip_layouts/pdf_contenuto.dart';
 import 'package:buts/services/payslip_layouts/prestampato_classifier.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -157,6 +158,71 @@ void main() {
       ]);
       expect(r.warnings, contains('dati ferie non trovati'));
       expect(r.warnings, contains('dati ROL non trovati'));
+    });
+  });
+
+  group('voci, trattenute, verifiche', () {
+    test('competenze lette da TUTTE le pagine, senza deduplicare', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.competenze.map((v) => v.descrizione),
+          ['ORE ORD.', 'ROL GODUTI']);
+      expect(r.competenze[0].quantita, closeTo(100.0, 0.001));
+      expect(r.competenze[0].importo, closeTo(1000.0, 0.001));
+      expect(r.competenze[1].quantita, closeTo(8.0, 0.001));
+      expect(r.competenze[1].importo, closeTo(88.0, 0.001));
+      expect(r.lordo, closeTo(1088.0, 0.001));
+    });
+
+    test(
+        'trattenute: CTR FPLD -> INPS, IRPEF NETTA -> IRPEF, righe informative escluse',
+        () {
+      final r = classificaPrestampato(pagine);
+      expect(r.trattenute['INPS'], closeTo(100.0, 0.001));
+      expect(r.trattenute['IRPEF'], closeTo(200.0, 0.001));
+      expect(r.trattenute.keys, isNot(contains('IMPONIBILE IRPEF')));
+    });
+
+    test('arrotondamento = arrPrec - arrAtt nella chiave del parser JOB', () {
+      final r = classificaPrestampato(pagine);
+      expect(
+        r.trattenute[BustaPagaRegexParser.chiaveArrotondamento],
+        closeTo(0.01, 0.0005),
+      );
+    });
+
+    test('netto derivato = lordo - trattenute e coincide con il stampato', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.netto, closeTo(787.99, 0.005));
+    });
+
+    test('flag di verifica veri quando le identità tornano', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.lordoVerificato, isTrue);
+      expect(r.trattenuteVerificate, isTrue);
+      expect(r.nettoVerificato, isTrue);
+      expect(r.warnings, isEmpty);
+    });
+
+    test('totale divergente -> flag falso e warning', () {
+      final pagineRotte = [
+        paginaSegue(),
+        [
+          for (final p in paginaDati())
+            p.testo == '1.088,01'
+                ? w('1.099,99', p.bordoSinistro, p.bordoDestro,
+                    p.bordoSuperiore)
+                : p,
+        ],
+      ];
+      final r = classificaPrestampato(pagineRotte);
+      expect(r.lordoVerificato, isFalse);
+      expect(r.nettoVerificato, isFalse);
+      expect(r.warnings.any((s) => s.contains('lordo calcolato')), isTrue);
+    });
+
+    test('straordinari: somma ore delle voci "Straordinario…"', () {
+      final r = classificaPrestampato(pagine);
+      expect(r.straordinari, 0);
     });
   });
 }
