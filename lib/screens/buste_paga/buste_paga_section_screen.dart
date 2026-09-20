@@ -35,9 +35,9 @@ enum _BustePagaTab { archivio, statistiche }
 /// (vedi piano sessione "barra di benvenuto dinamica").
 String greetingFor(DateTime now) {
   final hour = now.hour;
-  if (hour >= 5 && hour < 13) return 'Buongiorno Valerio';
-  if (hour >= 13 && hour < 18) return 'Buon pomeriggio Valerio';
-  return 'Buonasera Valerio';
+  if (hour >= 5 && hour < 13) return 'Buongiorno Michele';
+  if (hour >= 13 && hour < 18) return 'Buon pomeriggio Michele';
+  return 'Buonasera Michele';
 }
 
 /// Altezza approssimativa riservata alla sidecar flottante in basso
